@@ -20,3 +20,44 @@ body {
     margin-top: 4px;
     margin-bottom: 0;
 }
+
+/* Card */
+
+.game-screen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    background: #000000;
+    color: white;
+    gap: 16px;
+    font-family: sans-serif;
+}
+
+.card {
+    width: 280px;
+    height: 280px;
+    border-radius: 50%;
+    background: #1a1a2e;
+    border: 4px solid #7b2fbe;
+    position: relative;
+    box-shadow: 0 0 0 8px rgba(123, 47, 190, 0.15);
+}
+
+.your-card {
+    border-color: #4cc9f0;
+    box-shadow: 0 0 0 8px rgba(76, 201, 240, 0.15);
+}
+
+.symbol {
+    position: absolute;
+    cursor: pointer;
+    user-select: none;
+    transform: translate(-50%, -50%);
+    transition: transform 0.15s;
+}
+
+.symbol:hover {
+    transform: translate(-50%, -50%) scale(1.4);
+}
