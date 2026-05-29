@@ -1,13 +1,15 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
+
+
 
 
 export const GameScreen = ({ setScreen }) => {
-
+    const defaultTimer = 10;
     const [score, setScore] = useState(0)
     const [message, setMessage] = useState("")
     const [roundIndex, setRoundIndex] = useState(0)
     const [gameOver, setGameOver] = useState(false)
-
+    const [timer, setTimer] = useState(defaultTimer)
 
 
     const rounds = [
@@ -71,6 +73,7 @@ export const GameScreen = ({ setScreen }) => {
                 setMessage("Correct")
                 setScore(score + 1)
                 setRoundIndex(roundIndex + 1)
+                setTimer(defaultTimer)
             }
             else { setGameOver(true) }
 
@@ -107,12 +110,35 @@ export const GameScreen = ({ setScreen }) => {
         }
     }
 
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setTimer((prev) => {
+                if (prev === 0) {
+                    setRoundIndex(roundIndex + 1)
+                    setTimer(defaultTimer);
+                }
+                return prev - 1;
+
+            }
+
+
+            )
+        }, 1000);
+        return () => clearInterval(interval);
+    }
+
+
+    )
+
+
     return (
         <div className="game-screen">
             <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
                 <button className=" block mr-auto px-4 py-2 bg-rounded-600 rounded-lg text-white hover:bg-purple-700 " onClick={() => setScreen("home")}>back</button>
                 <h2 className="m-0 text-white font-bold">Score: {score}</h2><br />
                 <p className="m-0 text-gray-400" >{message} </p>
+                {!gameOver && <p>Timer: {timer}</p>}
             </div>
             {!gameOver && (<>
                 <h2>Card 1</h2>
