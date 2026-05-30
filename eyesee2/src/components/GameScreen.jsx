@@ -10,6 +10,7 @@ export const GameScreen = ({ setScreen }) => {
     const [roundIndex, setRoundIndex] = useState(0)
     const [gameOver, setGameOver] = useState(false)
     const [timer, setTimer] = useState(defaultTimer)
+    const [gameStart, setGameStart] = useState(false)
 
 
     const rounds = [
@@ -112,6 +113,7 @@ export const GameScreen = ({ setScreen }) => {
 
 
     useEffect(() => {
+        if (!gameStart) return
         const interval = setInterval(() => {
             setTimer((prev) => {
                 if (prev === 0) {
@@ -126,39 +128,46 @@ export const GameScreen = ({ setScreen }) => {
             )
         }, 1000);
         return () => clearInterval(interval);
+    }, [gameStart, roundIndex])
+
+    const handleGameStart = () => {
+        setGameStart(true)
+
     }
-
-
-    )
 
 
     return (
         <div className="game-screen">
             <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
                 <button className=" block mr-auto px-4 py-2 bg-rounded-600 rounded-lg text-white hover:bg-purple-700 " onClick={() => setScreen("home")}>back</button>
+                {!gameStart && <button onClick={handleGameStart} >Start</button>}
                 <h2 className="m-0 text-white font-bold">Score: {score}</h2><br />
                 <p className="m-0 text-gray-400" >{message} </p>
                 {!gameOver && <p>Timer: {timer}</p>}
             </div>
             {!gameOver && (<>
-                <h2>Card 1</h2>
-                <div className="card">
-                    {centerCard.map((symbol, index) => (
-                        <span className="symbol"
-                            key={symbol} style={getSymbolStyle(index, centerCard.length)} onClick={() => handleClick(symbol)}
-                        >
-                            {symbol}
-                        </span>))}
-                </div>
+                {gameStart && (<>
+                    <h2>Card 1</h2>
+                    <div className="card">
+                        {centerCard.map((symbol, index) => (
+                            <span className="symbol"
+                                key={symbol} style={getSymbolStyle(index, centerCard.length)} onClick={() => handleClick(symbol)}
+                            >
+                                {symbol}
+                            </span>))}
+                    </div>
 
-                <h2>Card 2</h2>
-                <div className="card your-card">
-                    {yourCard.map((symbol, index) => (
-                        <span className="symbol" key={symbol} style={getSymbolStyle(index, centerCard.length)} onClick={() => handleClick(symbol)}>
-                            {symbol}
-                        </span>
-                    ))}
-                </div>
+
+                    <h2>Card 2</h2>
+                    <div className="card your-card">
+                        {yourCard.map((symbol, index) => (
+                            <span className="symbol" key={symbol} style={getSymbolStyle(index, centerCard.length)} onClick={() => handleClick(symbol)}>
+                                {symbol}
+                            </span>
+                        ))}
+                    </div>
+                </>)}
+
             </>)}
 
             {gameOver && (
