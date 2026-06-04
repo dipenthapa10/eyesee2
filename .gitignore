@@ -22,3 +22,15 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Dependencies
+/eyesee2/node_modules/
+/server/node_modules/
+
+# Production builds
+/eyesee2/dist/
+/eyesee2/dist-ssr/
+
+# Environment variables
+.env
+/server/.env
