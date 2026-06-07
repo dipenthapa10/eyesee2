@@ -24,6 +24,9 @@ app.use(express.urlencoded({ extended: true })) // server read from data
 const PORT = 3001
 const rooms = {}
 
+// game data
+const { rounds } = require('./gameData')
+
 const generateRoomCode = () => {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
     let code = '';
@@ -94,31 +97,20 @@ io.on('connection', (socket) => {
     socket.on('disconnect', () => {
         console.log('player disconnects:', socket.id)
     })
+
+    socket.on('startGame', (data) => {
+        console.log(`game starting in room ${data.roomCode}`)
+        io.to(data.roomCode).emit('gameStarted', {
+            rounds: rounds,
+            currentRound: 0
+        })
+    })
 })
 
-app.get('/', (req, res) => {
-    res.send('eyesee2 server is running')
-})
 
-app.get('/createroom', (req, res) => {
-    const roomCode = generateRoomCode()
-    rooms[roomCode] = {
-        players: [],
-        gameStarted: false
-    }
-    res.json({ roomCode })
 
-})
 
-app.get('/joinroom/:code', (req, res) => {
-    const code = req.params.code
 
-    if (rooms[code]) {
-        res.json({ success: true, message: 'room found' })
-    } else {
-        res.json({ success: false, message: 'room not found' })
-    }
-})
 
 
 server.listen(PORT, () => {
