@@ -16,9 +16,12 @@ export const JoinRoom = ({ setScreen, playerName }) => {
             console.log("joinError received!", data)
             setError(data.message)
         })
+
+
         return () => {
             socket.off('playerJoined')
             socket.off('joinError')
+
         }
     }, [])
 

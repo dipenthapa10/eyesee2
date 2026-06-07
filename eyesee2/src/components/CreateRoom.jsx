@@ -16,12 +16,21 @@ export const CreateRoom = ({ setScreen, playerName }) => {
         socket.on('playerJoined', (data) => {
             setPlayers(data.players)
         })
+
+
         return () => {
             socket.off('roomCreated')
             socket.off('playerJoined')
+
         }
     }, [])
 
+
+
+
+    const handleStartGame = () => {
+        socket.emit('startGame', { roomCode })
+    }
 
     return (
         <div>
@@ -32,7 +41,11 @@ export const CreateRoom = ({ setScreen, playerName }) => {
                     <h3>Room Created!</h3>
                     <h1>{roomCode}</h1>
                     <p> share this with your friend</p>
-                    <button onClick={() => setScreen("game")}> Start Game</button>
+                    <h3>Players in room:</h3>
+                    {players.map(player => (
+                        <p key={player.id}>{player.name} </p>
+                    ))}
+                    <button onClick={handleStartGame}> Start Game</button>
                 </div>
             )
 

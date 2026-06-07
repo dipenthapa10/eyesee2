@@ -28,6 +28,8 @@ export const HomeScreen = ({ setScreen, setPlayerName, playerName }) => {
             alert("please enter room code")
             return
         }
+
+        setRoomCode(roomCode)
         socket.emit('joinRoom', { playerName, roomCode })
         setScreen("join")
     }

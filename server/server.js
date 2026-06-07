@@ -52,6 +52,7 @@ io.on('connection', (socket) => {
                 score: 0
             }],
             gameStarted: false,
+            currentRound: 0,
             deck: []
         };
 
@@ -84,7 +85,8 @@ io.on('connection', (socket) => {
 
             io.to(data.roomCode).emit('playerJoined', {
                 players: rooms[data.roomCode].players,
-                playerName: data.playerName
+                playerName: data.playerName,
+                roomCode: data.roomCode
             })
         }
         else {
@@ -105,9 +107,25 @@ io.on('connection', (socket) => {
             currentRound: 0
         })
     })
+
+    socket.on('cardMatch', (data) => {
+        const roomCode = [...socket.rooms].find(r => r !== socket.id)
+        console.log("cardMatch from:", data.playerName, "in room:", roomCode)
+
+        if (!roomCode || !rooms[roomCode]) {
+            console.log("room not found!")
+            return
+        }
+
+        rooms[roomCode].currentRound += 1
+
+        io.to(roomCode).emit('matchDone', {
+            currentRound: rooms[roomCode].currentRound
+        })
+    })
+
+
 })
-
-
 
 
 

@@ -1,75 +1,54 @@
 import { useState, useEffect } from "react"
+import socket from "../socket";
 
 
 
-
-export const GameScreen = ({ setScreen }) => {
+export const GameScreen = ({ setScreen, rounds, roomCode, playerName }) => {
     const defaultTimer = 10;
     const [score, setScore] = useState(0)
     const [message, setMessage] = useState("")
     const [roundIndex, setRoundIndex] = useState(0)
     const [gameOver, setGameOver] = useState(false)
     const [timer, setTimer] = useState(defaultTimer)
-    const [gameStart, setGameStart] = useState(false)
+    const [gameStart, setGameStart] = useState(true)
 
 
-    const rounds = [
-        {
-            center: ["🍎", "🍌", "🎯", "🎲", "🧩", "🚗", "🚀", "🛸"],
-            yours: ["🍇", "🍌", "👻", "👑", "🍕", "🎸", "⚽️", "🌙"],
-            match: "🍌"
-        },
-        {
-            center: ["🐱", "💡", "🎨", "🏀", "🌙", "🍀", "💎", "🎁"],
-            yours: ["🐶", "🔥", "🐱", "⚓️", "💣", "🎈", "🌵", "🕶️"],
-            match: "🐱"
-        },
-        {
-            center: ["🚀", "🌋", "🐙", "🎩", "🍉", "🔮", "🛎️", "🦉"],
-            yours: ["🍩", "🌵", "🎯", "🔥", "🦉", "👽", "🤖", "💧"],
-            match: "🦉"
-        },
-        {
-            center: ["💎", "🐝", "🌸", "🚗", "🍿", "👑", "🦖", "☀️"],
-            yours: ["🎸", "🌲", "💎", "🤠", "⏰", "🛸", "🔑", "🍦"],
-            match: "💎"
-        },
-        {
-            center: ["🔥", "🍇", "🤖", "🎈", "🌊", "🐶", "🏔️", "🕶️"],
-            yours: ["🔥", "💡", "🎁", "🦋", "🍎", "🧩", "👻", "🌙"],
-            match: "🔥"
-        },
-        {
-            center: ["👻", "🍕", "🌲", "🎯", "🐝", "💣", "🤠", "🔮"],
-            yours: ["🏀", "👻", "🦖", "⚡️", "🍌", "🎨", "🛎️", "🌋"],
-            match: "👻"
-        },
-        {
-            center: ["⚽️", "🍀", "🔑", "🦉", "🍩", "🤖", "🌸", "🎩"],
-            yours: ["⚽️", "🐙", "💧", "🎲", "👽", "🍉", "☀️", "🚀"],
-            match: "⚽️"
-        },
-        {
-            center: ["🌙", "🐶", "💡", "🍦", "⚓️", "🎁", "🦖", "🔒"],
-            yours: ["🌙", "🍎", "🕷️", "🎸", "🌵", "🤠", "💎", "🐝"],
-            match: "🌙"
-        },
-        {
-            center: ["🎲", "🌋", "👑", "🍿", "🐱", "⚡️", "🔮", "🌲"],
-            yours: ["🎲", "🦉", "🍇", "🛎️", "🚗", "💣", "🌸", "👽"],
-            match: "🎲"
-        },
-        {
-            center: ["🍉", "🔑", "🎨", "🐙", "🏔️", "🎈", "🤠", "💧"],
-            yours: ["🍉", "🦖", "☀️", "🧩", "🍕", "🔒", "🐝", "🚀"],
-            match: "🍉"
-        },
-    ]
+    useEffect(() => {
+        if (!gameStart) return
+        const interval = setInterval(() => {
+            setTimer((prev) => {
+                if (prev === 0) {
+                    setRoundIndex(roundIndex + 1)
+                    setTimer(defaultTimer);
+                }
+                return prev - 1;
+
+            }
+
+
+            )
+        }, 1000);
+        return () => clearInterval(interval);
+    }, [gameStart, roundIndex])
+
+    useEffect(() => {
+        socket.on('matchDone', (data) => {
+            setRoundIndex(data.currentRound)
+        })
+
+        return () => socket.off('matchDone')
+    }, [])
 
     const currentRound = rounds[roundIndex]
 
+    if (!currentRound) return <div> Loading Time...</div>
+
     const handleClick = (symbol) => {
         if (symbol === currentRound.match) {
+            console.log("emitting cardMatch with:", { roomCode, playerName })
+            console.log("roomCode in GameScreen:", roomCode)
+            socket.emit('cardMatch', { roomCode, playerName })
+
             if (roundIndex < rounds.length - 1) {
                 setMessage("Correct")
                 setScore(score + 1)
@@ -77,6 +56,7 @@ export const GameScreen = ({ setScreen }) => {
                 setTimer(defaultTimer)
             }
             else { setGameOver(true) }
+
 
         }
         else {
@@ -112,35 +92,16 @@ export const GameScreen = ({ setScreen }) => {
     }
 
 
-    useEffect(() => {
-        if (!gameStart) return
-        const interval = setInterval(() => {
-            setTimer((prev) => {
-                if (prev === 0) {
-                    setRoundIndex(roundIndex + 1)
-                    setTimer(defaultTimer);
-                }
-                return prev - 1;
-
-            }
 
 
-            )
-        }, 1000);
-        return () => clearInterval(interval);
-    }, [gameStart, roundIndex])
 
-    const handleGameStart = () => {
-        setGameStart(true)
-
-    }
 
 
     return (
         <div className="game-screen">
             <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
                 <button className=" block mr-auto px-4 py-2 bg-rounded-600 rounded-lg text-white hover:bg-purple-700 " onClick={() => setScreen("home")}>back</button>
-                {!gameStart && <button onClick={handleGameStart} >Start</button>}
+
                 <h2 className="m-0 text-white font-bold">Score: {score}</h2><br />
                 <p className="m-0 text-gray-400" >{message} </p>
                 {!gameOver && <p>Timer: {timer}</p>}
