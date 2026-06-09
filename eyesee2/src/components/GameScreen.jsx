@@ -13,23 +13,6 @@ export const GameScreen = ({ setScreen, rounds, roomCode, playerName }) => {
     const [gameStart, setGameStart] = useState(true)
 
 
-    useEffect(() => {
-        if (!gameStart) return
-        const interval = setInterval(() => {
-            setTimer((prev) => {
-                if (prev === 0) {
-                    setRoundIndex(roundIndex + 1)
-                    setTimer(defaultTimer);
-                }
-                return prev - 1;
-
-            }
-
-
-            )
-        }, 1000);
-        return () => clearInterval(interval);
-    }, [gameStart, roundIndex])
 
     useEffect(() => {
         socket.on('matchDone', (data) => {
@@ -37,6 +20,29 @@ export const GameScreen = ({ setScreen, rounds, roomCode, playerName }) => {
         })
 
         return () => socket.off('matchDone')
+    }, [])
+
+    useEffect(() => {
+        socket.on('timerTick', (data) => {
+            setTimer(data.timer)
+        })
+
+        // listen for new round from server
+        socket.on('newRound', (data) => {
+            setRoundIndex(data.currentRound)
+            setMessage("")
+        })
+
+        // listen for game over from server
+        socket.on('gameOver', () => {
+            setGameOver(true)
+        })
+        return () => {
+            socket.off('timerTick')
+            socket.off('newRound')
+            socket.off('gameOver')
+        }
+
     }, [])
 
     const currentRound = rounds[roundIndex]

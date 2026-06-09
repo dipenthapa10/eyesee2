@@ -106,21 +106,66 @@ io.on('connection', (socket) => {
             rounds: rounds,
             currentRound: 0
         })
+        const roomCode = data.roomCode
+        rooms[roomCode].currentRound = 0
+        rooms[data.roomCode].timer = 10
+
+        const interval = setInterval(() => {
+            rooms[roomCode].timer -= 1
+            io.to(roomCode).emit('timerTick', {
+                timer: rooms[roomCode].timer
+            })
+
+            if (rooms[roomCode].timer === 0) {
+                rooms[roomCode].currentRound += 1
+
+                if (rooms[roomCode].currentRound >= rooms.length) {
+                    clearInterval(interval)
+                    io.to(roomCode).emit('gameOver', {
+                        message: 'Game Over'
+                    })
+                    return
+                }
+                // reset timer for next round
+                rooms[roomCode].timer = 10
+
+                // tell both players new round started
+                io.to(roomCode).emit('newRound', {
+                    currentRound: rooms[roomCode].currentRound
+                })
+            }
+
+        }, 1000)
+
+        // store interval so we can stop it later
+        rooms[roomCode].interval = interval
     })
 
     socket.on('cardMatch', (data) => {
         const roomCode = [...socket.rooms].find(r => r !== socket.id)
-        console.log("cardMatch from:", data.playerName, "in room:", roomCode)
 
-        if (!roomCode || !rooms[roomCode]) {
-            console.log("room not found!")
-            return
-        }
+        if (!roomCode || !rooms[roomCode]) return
 
         rooms[roomCode].currentRound += 1
 
+        // no more rounds
+        if (rooms[roomCode].currentRound >= rounds.length) {
+            clearInterval(rooms[roomCode].interval)
+            io.to(roomCode).emit('gameOver', {
+                message: 'Game Over!'
+            })
+            return
+        }
+
+        // reset timer for next round
+        rooms[roomCode].timer = 10
+
         io.to(roomCode).emit('matchDone', {
             currentRound: rooms[roomCode].currentRound
+        })
+
+        io.to(roomCode).emit('timerTick', {
+            timer: rooms[roomCode].timer
         })
     })
 
