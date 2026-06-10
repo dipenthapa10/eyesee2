@@ -11,6 +11,7 @@ export const GameScreen = ({ setScreen, rounds, roomCode, playerName }) => {
     const [gameOver, setGameOver] = useState(false)
     const [timer, setTimer] = useState(defaultTimer)
     const [gameStart, setGameStart] = useState(true)
+    const [players, setPlayers] = useState([])
 
 
 
@@ -37,10 +38,25 @@ export const GameScreen = ({ setScreen, rounds, roomCode, playerName }) => {
         socket.on('gameOver', () => {
             setGameOver(true)
         })
+
+        socket.on('gameRestarted', (data) => {
+            setRoundIndex(0)
+            setScore(0)
+            setMessage("")
+            setGameOver(false)
+            setTimer(10)
+        })
+
+        socket.on('scoreUpdated', (data) => {
+
+            setPlayers(data.players)
+        })
         return () => {
             socket.off('timerTick')
             socket.off('newRound')
             socket.off('gameOver')
+            socket.off('gameRestarted')
+            socket.off('scoreUpdated')
         }
 
     }, [])
@@ -51,24 +67,11 @@ export const GameScreen = ({ setScreen, rounds, roomCode, playerName }) => {
 
     const handleClick = (symbol) => {
         if (symbol === currentRound.match) {
-            console.log("emitting cardMatch with:", { roomCode, playerName })
-            console.log("roomCode in GameScreen:", roomCode)
-            socket.emit('cardMatch', { roomCode, playerName })
-
-            if (roundIndex < rounds.length - 1) {
-                setMessage("Correct")
-                setScore(score + 1)
-                setRoundIndex(roundIndex + 1)
-                setTimer(defaultTimer)
-            }
-            else { setGameOver(true) }
-
-
-        }
-        else {
-            setMessage("Wrong")
-
-
+            setMessage("✅ Correct!")
+            setScore(score + 1)
+            socket.emit('cardMatch', { playerName })
+        } else {
+            setMessage("❌ Wrong!")
         }
     }
 
@@ -77,7 +80,9 @@ export const GameScreen = ({ setScreen, rounds, roomCode, playerName }) => {
         setMessage("")
         setRoundIndex(0)
         setGameOver(false)
+        socket.emit('restartGame')
     }
+
 
     const centerCard = currentRound.center;
     const yourCard = currentRound.yours;
@@ -108,7 +113,14 @@ export const GameScreen = ({ setScreen, rounds, roomCode, playerName }) => {
             <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
                 <button className=" block mr-auto px-4 py-2 bg-rounded-600 rounded-lg text-white hover:bg-purple-700 " onClick={() => setScreen("home")}>back</button>
 
-                <h2 className="m-0 text-white font-bold">Score: {score}</h2><br />
+                <div className="flex gap-8 justify-center">
+                    {players.map(player => (
+                        <div key={player.id}>
+                            <p>{player.name}</p>
+                            <p>{player.score}</p>
+                        </div>
+                    ))}
+                </div>
                 <p className="m-0 text-gray-400" >{message} </p>
                 {!gameOver && <p>Timer: {timer}</p>}
             </div>
