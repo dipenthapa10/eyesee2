@@ -121,8 +121,13 @@ io.on('connection', (socket) => {
 
                 if (rooms[roomCode].currentRound >= rounds.length) {
                     clearInterval(interval)
+
+                    const winner = rooms[roomCode].players.reduce((a, b) =>
+                        a.score > b.score ? a : b
+                    )
                     io.to(roomCode).emit('gameOver', {
-                        message: 'Game Over'
+                        winner: winner.name,
+                        players: rooms[roomCode].players
                     })
                     return
                 }
@@ -154,8 +159,14 @@ io.on('connection', (socket) => {
         // no more rounds
         if (rooms[roomCode].currentRound >= rounds.length) {
             clearInterval(rooms[roomCode].interval)
+
+            const winner = rooms[roomCode].players.reduce((a, b) =>
+                a.score > b.score ? a : b)
+
+
             io.to(roomCode).emit('gameOver', {
-                message: 'Game Over!'
+                winner: winner.name,
+                players: rooms[roomCode].players
             })
             return
         }
@@ -186,6 +197,7 @@ io.on('connection', (socket) => {
         // reset room state
         rooms[roomCode].currentRound = 0
         rooms[roomCode].timer = 10
+        rooms[roomCode].players.forEach(p => p.score = 0)
 
         // restart game for both players
         io.to(roomCode).emit('gameRestarted', {
@@ -204,8 +216,13 @@ io.on('connection', (socket) => {
                 rooms[roomCode].currentRound += 1
 
                 if (rooms[roomCode].currentRound >= rounds.length) {
-                    clearInterval(interval)
-                    io.to(roomCode).emit('gameOver', { message: 'Game Over' })
+                    const winner = rooms[roomCode].players.reduce((a, b) =>
+                        a.score > b.score ? a : b
+                    )
+                    io.to(roomCode).emit('gameOver', {
+                        winner: winner.name,
+                        players: rooms[roomCode].players
+                    })
                     return
                 }
 

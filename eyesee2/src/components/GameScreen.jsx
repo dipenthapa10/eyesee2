@@ -12,6 +12,7 @@ export const GameScreen = ({ setScreen, rounds, roomCode, playerName }) => {
     const [timer, setTimer] = useState(defaultTimer)
     const [gameStart, setGameStart] = useState(true)
     const [players, setPlayers] = useState([])
+    const [winner, setWinner] = useState("")
 
 
 
@@ -35,8 +36,11 @@ export const GameScreen = ({ setScreen, rounds, roomCode, playerName }) => {
         })
 
         // listen for game over from server
-        socket.on('gameOver', () => {
+        socket.on('gameOver', (data) => {
             setGameOver(true)
+            setWinner(data.winner || "")
+            setPlayers(data.players || [])
+
         })
 
         socket.on('gameRestarted', (data) => {
@@ -45,6 +49,8 @@ export const GameScreen = ({ setScreen, rounds, roomCode, playerName }) => {
             setMessage("")
             setGameOver(false)
             setTimer(10)
+            setWinner("")
+            setPlayers([])
         })
 
         socket.on('scoreUpdated', (data) => {
@@ -151,13 +157,13 @@ export const GameScreen = ({ setScreen, rounds, roomCode, playerName }) => {
 
             {gameOver && (
                 <div>
-                    <h1>Game Over</h1>
-                    <h2>Final Score: {score}</h2>
+                    <h1>🏆 {winner} wins!</h1>
+                    {players.map(p => (
+                        <p key={p.id}>{p.name}: {p.score}</p>
+                    ))}
                     <button onClick={restartGame}>Play Again</button>
                 </div>
-            )
-
-            }
+            )}
 
         </div>
     )
