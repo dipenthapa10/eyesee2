@@ -1,63 +1,131 @@
+/* Global */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
 body {
-    margin: 0;
+    font-family: 'Nunito', sans-serif;
+    background: white;
 }
 
-.hero-page {
+/* Home Screen */
+.home-page {
+    min-height: 100vh;
+    background: white;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    min-height: 100vh;
+    padding: 48px 40px;
+    gap: 24px;
+}
+
+.home-logo {
+    font-family: "Happy Monkey", system-ui;
+    font-size: 68px;
+    color: #000000;
+    line-height: 1;
+    letter-spacing: 1px;
     text-align: center;
-    gap: 10px;
 }
 
-.hero-title {
-    margin: 0;
+.home-tagline {
+    color: #000000;
+    font-size: 15px;
+    font-weight: 600;
+    margin-top: -12px;
+    text-align: center;
 }
 
-.hero-subtitle {
-    margin-top: 4px;
-    margin-bottom: 0;
-}
-
-/* Card */
-
-.game-screen {
+.home-card {
+    background: white;
+    border-radius: 20px;
+    border: 2px solid #EEF2FF;
+    padding: 28px 32px;
+    width: 100%;
+    max-width: 400px;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    min-height: 100vh;
+    gap: 14px;
+    box-shadow: 0 8px 30px rgba(79, 70, 229, 0.08);
+}
+
+.input-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: #000000;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 6px;
+}
+
+input::placeholder {
+    color: #000000;
+    opacity: 0.75;
+}
+
+.home-input {
+    width: 100%;
+    padding: 12px 16px;
+    border: 2px solid #EEF2FF;
+    border-radius: 12px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 14px;
+    background: #FAFAFF;
+    color: #1a1a2e;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.home-input:focus {
+    border-color: #000000;
+}
+
+.home-divider {
+    border: none;
+    border-top: 2px solid #EEF2FF;
+}
+
+.join-row {
+    display: flex;
+    gap: 8px;
+}
+
+.join-row .home-input {
+    flex: 1;
+}
+
+.btn-join {
+    padding: 12px 20px;
     background: #000000;
     color: white;
-    gap: 16px;
-    font-family: sans-serif;
-}
-
-.card {
-    width: 280px;
-    height: 280px;
-    border-radius: 50%;
-    background: #1a1a2e;
-    border: 4px solid #7b2fbe;
-    position: relative;
-    box-shadow: 0 0 0 8px rgba(123, 47, 190, 0.15);
-}
-
-.your-card {
-    border-color: #4cc9f0;
-    box-shadow: 0 0 0 8px rgba(76, 201, 240, 0.15);
-}
-
-.symbol {
-    position: absolute;
+    border: none;
+    border-radius: 12px;
+    font-family: 'Fredoka One', sans-serif;
+    font-size: 18px;
     cursor: pointer;
-    user-select: none;
-    transform: translate(-50%, -50%);
-    transition: transform 0.15s;
+    transition: background 0.2s;
 }
 
-.symbol:hover {
-    transform: translate(-50%, -50%) scale(1.4);
+.btn-join:hover {
+    background: #9e9e9e;
+}
+
+.btn-create {
+    width: 100%;
+    padding: 14px;
+    background: #000000;
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-family: 'Fredoka One', sans-serif;
+    font-size: 22px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.btn-create:hover {
+    background: #70706f;
 }
