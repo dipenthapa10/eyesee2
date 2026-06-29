@@ -46,6 +46,7 @@ io.on('connection', (socket) => {
 
         rooms[roomCode] = {
             id: roomCode,
+            hostId: socket.id,
             players: [{
                 id: socket.id,
                 name: data.playerName || 'Host',
@@ -61,7 +62,9 @@ io.on('connection', (socket) => {
 
         socket.emit('roomCreated', {
             roomCode,
-            playerName: data.playerName || 'Host'
+            players: rooms[roomCode].players,
+            hostId: rooms[roomCode].hostId
+
         })
     })
 
@@ -85,7 +88,7 @@ io.on('connection', (socket) => {
 
             io.to(data.roomCode).emit('playerJoined', {
                 players: rooms[data.roomCode].players,
-                playerName: data.playerName,
+                hostId: rooms[data.roomCode].hostId,
                 roomCode: data.roomCode
             })
         }

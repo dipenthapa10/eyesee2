@@ -3,6 +3,7 @@ import { HomeScreen } from "./components/HomeScreen";
 import { CreateRoom } from "./components/CreateRoom";
 import { JoinRoom } from "./components/JoinRoom"
 import { useState } from "react"
+import { Lobby } from "./components/Lobby"
 import './App.css'
 import { GameScreen } from "./components/GameScreen";
 import { useEffect } from "react";
@@ -13,6 +14,7 @@ function App() {
   const [playerName, setPlayerName] = useState("")
   const [rounds, setRounds] = useState([])
   const [roomCode, setRoomCode] = useState("")
+  const [isHost, setIsHost] = useState(false)
 
   useEffect(() => {
     socket.on('connect', () => {
@@ -29,10 +31,15 @@ function App() {
 
     socket.on('roomCreated', (data) => {
       setRoomCode(data.roomCode)
+      setScreen("lobby")
+      setIsHost(true)
     })
 
     socket.on('playerJoined', (data) => {
       setRoomCode(data.roomCode)
+
+      setScreen("lobby")
+
     })
 
     socket.on('gameStarted', (data) => {
@@ -52,8 +59,7 @@ function App() {
   return (
     <div >
       {screen === "home" && <HomeScreen setScreen={setScreen} setPlayerName={setPlayerName} playerName={playerName} setRoomCode={setRoomCode} />}
-      {screen === "join" && <JoinRoom setScreen={setScreen} playerName={playerName} />}
-      {screen === "create" && <CreateRoom setScreen={setScreen} playerName={playerName} />}
+      {screen === "lobby" && (<Lobby setScreen={setScreen} playerName={playerName} roomCode={roomCode} isHost={isHost} />)}
       {screen === "game" && <GameScreen setScreen={setScreen} rounds={rounds} roomCode={roomCode} playerName={playerName} />}
     </div>
   )
