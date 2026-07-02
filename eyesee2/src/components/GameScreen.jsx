@@ -73,11 +73,11 @@ export const GameScreen = ({ setScreen, rounds, roomCode, playerName }) => {
 
     const handleClick = (symbol) => {
         if (symbol === currentRound.match) {
-            setMessage("✅ Correct!")
+            setMessage("Correct!")
             setScore(score + 1)
             socket.emit('cardMatch', { playerName })
         } else {
-            setMessage("❌ Wrong!")
+            setMessage("Wrong!")
         }
     }
 
@@ -115,56 +115,88 @@ export const GameScreen = ({ setScreen, rounds, roomCode, playerName }) => {
 
 
     return (
-        <div className="game-screen">
-            <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-                <button className=" block mr-auto px-4 py-2 bg-rounded-600 rounded-lg text-white hover:bg-purple-700 " onClick={() => setScreen("home")}>back</button>
+        <div className="lobby-page">
+            {/* LEFT - cards */}
+            <div className="lobby-left">
+                <p className="lobby-logo">EyeSee2</p>
 
-                <div className="flex gap-8 justify-center">
-                    {players.map(player => (
-                        <div key={player.id}>
-                            <p>{player.name}</p>
-                            <p>{player.score}</p>
+                <div className="lobby-round-timer">
+                    <span>Round: {roundIndex + 1} / {rounds.length}</span>
+                    <span>Timer: {timer}s</span>
+                </div>
+
+                {!gameOver && (
+                    <div className="game-cards-area">
+                        <div className="card">
+                            {centerCard.map((symbol, index) => (
+                                <span
+                                    className="symbol"
+                                    key={symbol}
+                                    style={getSymbolStyle(index, centerCard.length)}
+                                    onClick={() => handleClick(symbol)}
+                                >
+                                    {symbol}
+                                </span>
+                            ))}
                         </div>
-                    ))}
-                </div>
-                <p className="m-0 text-gray-400" >{message} </p>
-                {!gameOver && <p>Timer: {timer}</p>}
+
+                        <div className="card your-card">
+                            {yourCard.map((symbol, index) => (
+                                <span
+                                    className="symbol"
+                                    key={symbol}
+                                    style={getSymbolStyle(index, yourCard.length)}
+                                    onClick={() => handleClick(symbol)}
+                                >
+                                    {symbol}
+                                </span>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {gameOver && (
+                    <div className="game-over-box">
+                        <h1>🏆 {winner} wins!</h1>
+                        <button className="lobby-btn-start" onClick={restartGame}>
+                            Play Again
+                        </button>
+                    </div>
+                )}
             </div>
-            {!gameOver && (<>
-                {gameStart && (<>
-                    <h2>Card 1</h2>
-                    <div className="card">
-                        {centerCard.map((symbol, index) => (
-                            <span className="symbol"
-                                key={symbol} style={getSymbolStyle(index, centerCard.length)} onClick={() => handleClick(symbol)}
-                            >
-                                {symbol}
-                            </span>))}
+
+            {/* RIGHT - players same as lobby */}
+            <div className="lobby-right">
+                {players.length > 0 ? (
+                    players.map((p, i) => (
+                        <div key={p.id} className="lobby-player-box">
+                            <div className={`lobby-player-avatar ${i === 1 ? 'p2' : ''}`}>
+                                {p.name[0].toUpperCase()}
+                            </div>
+                            <div className="lobby-player-info">
+                                <p className="lobby-player-name">{p.name}</p>
+                            </div>
+                            <span className="lobby-player-badge">{p.score} pts</span>
+                        </div>
+                    ))
+                ) : (
+                    <div className="lobby-player-box">
+                        <div className="lobby-player-avatar">
+                            {playerName ? playerName[0].toUpperCase() : 'P'}
+                        </div>
+                        <div className="lobby-player-info">
+                            <p className="lobby-player-name">{playerName}</p>
+                        </div>
+                        <span className="lobby-player-badge">{score} pts</span>
                     </div>
+                )}
 
-
-                    <h2>Card 2</h2>
-                    <div className="card your-card">
-                        {yourCard.map((symbol, index) => (
-                            <span className="symbol" key={symbol} style={getSymbolStyle(index, centerCard.length)} onClick={() => handleClick(symbol)}>
-                                {symbol}
-                            </span>
-                        ))}
+                {message && (
+                    <div className="game-message-box">
+                        <p className="game-message-text">{message}</p>
                     </div>
-                </>)}
-
-            </>)}
-
-            {gameOver && (
-                <div>
-                    <h1>🏆 {winner} wins!</h1>
-                    {players.map(p => (
-                        <p key={p.id}>{p.name}: {p.score}</p>
-                    ))}
-                    <button onClick={restartGame}>Play Again</button>
-                </div>
-            )}
-
+                )}
+            </div>
         </div>
     )
 }

@@ -1,7 +1,5 @@
 
 import { HomeScreen } from "./components/HomeScreen";
-import { CreateRoom } from "./components/CreateRoom";
-import { JoinRoom } from "./components/JoinRoom"
 import { useState } from "react"
 import { Lobby } from "./components/Lobby"
 import './App.css'

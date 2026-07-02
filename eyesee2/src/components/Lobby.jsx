@@ -15,7 +15,7 @@ export const Lobby = ({ setScreen, playerName, roomCode, isHost }) => {
         })
         socket.on('joinError', (data) => {
             console.log("joinError received!", data)
-            setError(data.message)
+
         })
 
         return () => {
