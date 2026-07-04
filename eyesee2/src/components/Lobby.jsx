@@ -3,6 +3,7 @@ import socket from '../socket'
 
 export const Lobby = ({ setScreen, playerName, roomCode, isHost }) => {
     const [players, setPlayers] = useState([])
+    const [selectedTimer, setSelectedTimer] = useState(0)
 
     useEffect(() => {
         socket.on('roomCreated', (data) => {
@@ -27,7 +28,10 @@ export const Lobby = ({ setScreen, playerName, roomCode, isHost }) => {
 
     const handleStartGame = () => {
 
-        socket.emit('startGame', { roomCode })
+        socket.emit('startGame', {
+            roomCode,
+            timer: selectedTimer
+        })
     }
 
     return (
@@ -36,8 +40,8 @@ export const Lobby = ({ setScreen, playerName, roomCode, isHost }) => {
                 <p className="lobby-logo">EyeSee2</p>
 
                 <div className="lobby-round-timer">
-                    <span>Round: </span>
-                    <span>Timer: </span>
+                    <span>Round:  </span>
+                    <span>Timer: {selectedTimer === 0 ? 'No Limit' : selectedTimer} </span>
                 </div>
 
                 <div className="lobby-settings-box">
@@ -59,7 +63,24 @@ export const Lobby = ({ setScreen, playerName, roomCode, isHost }) => {
                     </div>
                     <div className="lobby-setting-row">
                         <span>Timer</span>
-
+                        {isHost ? (
+                            <select
+                                className="lobby-select"
+                                value={selectedTimer}
+                                onChange={(e) => setSelectedTimer(Number(e.target.value))}
+                            >
+                                <option value={0}>No Time Limit</option>
+                                <option value={5}>5 sec</option>
+                                <option value={10}>10 sec</option>
+                                <option value={15}>15 sec</option>
+                            </select>
+                        ) : (
+                            <span>
+                                {selectedTimer === 0
+                                    ? "No Time Limit"
+                                    : `${selectedTimer} Seconds`}
+                            </span>
+                        )}
                     </div>
                 </div>
 

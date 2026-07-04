@@ -399,3 +399,34 @@ input::placeholder {
     gap: 40px;
     flex-wrap: wrap;
 }
+
+.lobby-select {
+    padding: 6px 10px;
+    border: 2px solid #222;
+    border-radius: 8px;
+    font-family: 'Happy Monkey', cursive;
+    font-size: 14px;
+    color: #111;
+    background: white;
+    cursor: pointer;
+    outline: none;
+}
+
+.lobby-waiting {
+    text-align: center;
+    padding: 13px;
+    background: #f5f5f5;
+    border-radius: 12px;
+    border: 2px solid #ddd;
+    font-family: 'Happy Monkey', cursive;
+    font-size: 16px;
+    color: #888;
+    margin-top: auto;
+}
+
+.game-over-box .lobby-btn-start {
+    width: auto;
+    min-width: 220px;
+    margin-top: 0;
+    display: block;
+}

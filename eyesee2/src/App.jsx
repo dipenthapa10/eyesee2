@@ -11,6 +11,8 @@ function App() {
   const [screen, setScreen] = useState("home")
   const [playerName, setPlayerName] = useState("")
   const [rounds, setRounds] = useState([])
+  const [timer, setTimer] = useState(0)
+  const [timerDuration, setTimerDuration] = useState(0)
   const [roomCode, setRoomCode] = useState("")
   const [isHost, setIsHost] = useState(false)
 
@@ -44,12 +46,20 @@ function App() {
       console.log("app.jsx received gameStarted!", data)
       console.log("rounds length:", data.rounds.length)
       setRounds(data.rounds)
+      setTimer(data.timer)
+      setTimerDuration(data.timerDuration)
       setScreen("game")
+      set
+
+    })
+    socket.on('gameRestarted', (data) => {
+      setRounds(data.rounds)
     })
     return () => {
       socket.off('roomCreated')
       socket.off('playerJoined')
       socket.off('gameStarted')
+      socket.off('gameRestarted')
     }
   }, [])
 
@@ -58,7 +68,8 @@ function App() {
     <div >
       {screen === "home" && <HomeScreen setScreen={setScreen} setPlayerName={setPlayerName} playerName={playerName} setRoomCode={setRoomCode} />}
       {screen === "lobby" && (<Lobby setScreen={setScreen} playerName={playerName} roomCode={roomCode} isHost={isHost} />)}
-      {screen === "game" && <GameScreen setScreen={setScreen} rounds={rounds} roomCode={roomCode} playerName={playerName} />}
+      {screen === "game" && <GameScreen setScreen={setScreen} rounds={rounds} roomCode={roomCode} playerName={playerName} initialTimer={timer}
+        initialTimerDuration={timerDuration} />}
     </div>
   )
 }

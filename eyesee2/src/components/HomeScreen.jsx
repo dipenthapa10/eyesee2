@@ -24,7 +24,7 @@ export const HomeScreen = ({ setScreen, setPlayerName, playerName, setRoomCode }
         }
         setRoomCode(roomCodeLocal)
         socket.emit('joinRoom', { playerName, roomCode: roomCodeLocal })
-        setScreen("lobby")
+        // setScreen("lobby")
 
     }
 

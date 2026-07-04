@@ -3,28 +3,29 @@ import socket from "../socket";
 
 
 
-export const GameScreen = ({ setScreen, rounds, roomCode, playerName }) => {
-    const defaultTimer = 10;
+export const GameScreen = ({ setScreen, rounds, roomCode, playerName, initialTimer, initialTimerDuration }) => {
+    // const defaultTimer = 10;
     const [score, setScore] = useState(0)
     const [message, setMessage] = useState("")
     const [roundIndex, setRoundIndex] = useState(0)
     const [gameOver, setGameOver] = useState(false)
-    const [timer, setTimer] = useState(defaultTimer)
+    const [timer, setTimer] = useState(initialTimer)
+    const [timerDuration, setTimerDuration] = useState(initialTimerDuration)
     const [gameStart, setGameStart] = useState(true)
     const [players, setPlayers] = useState([])
     const [winner, setWinner] = useState("")
 
 
 
+
+
     useEffect(() => {
-        socket.on('matchDone', (data) => {
+        socket.on('gameStarted', (data) => {
             setRoundIndex(data.currentRound)
+            setTimer(data.timer)
+            setTimerDuration(data.timerDuration)
         })
 
-        return () => socket.off('matchDone')
-    }, [])
-
-    useEffect(() => {
         socket.on('timerTick', (data) => {
             setTimer(data.timer)
         })
@@ -48,7 +49,8 @@ export const GameScreen = ({ setScreen, rounds, roomCode, playerName }) => {
             setScore(0)
             setMessage("")
             setGameOver(false)
-            setTimer(10)
+            setTimer(data.timer)
+            setTimerDuration(data.timerDuration)
             setWinner("")
             setPlayers([])
         })
@@ -57,13 +59,19 @@ export const GameScreen = ({ setScreen, rounds, roomCode, playerName }) => {
 
             setPlayers(data.players)
         })
+        socket.on('matchDone', (data) => {
+            setRoundIndex(data.currentRound)
+        })
         return () => {
             socket.off('timerTick')
             socket.off('newRound')
             socket.off('gameOver')
             socket.off('gameRestarted')
             socket.off('scoreUpdated')
+            socket.off('matchDone')
+
         }
+
 
     }, [])
 
@@ -87,6 +95,15 @@ export const GameScreen = ({ setScreen, rounds, roomCode, playerName }) => {
         setRoundIndex(0)
         setGameOver(false)
         socket.emit('restartGame')
+    }
+    const lobby = () => {
+        setRoundIndex(0)
+        setScore(0)
+        setMessage("")
+        setGameOver(false)
+        setWinner("")
+        setPlayers([])
+        setScreen("lobby")
     }
 
 
@@ -122,7 +139,7 @@ export const GameScreen = ({ setScreen, rounds, roomCode, playerName }) => {
 
                 <div className="lobby-round-timer">
                     <span>Round: {roundIndex + 1} / {rounds.length}</span>
-                    <span>Timer: {timer}s</span>
+                    <span>Timer: {timerDuration === 0 ? 'No Limit' : timer}</span>
                 </div>
 
                 {!gameOver && (
@@ -160,6 +177,9 @@ export const GameScreen = ({ setScreen, rounds, roomCode, playerName }) => {
                         <h1>🏆 {winner} wins!</h1>
                         <button className="lobby-btn-start" onClick={restartGame}>
                             Play Again
+                        </button>
+                        <button className="lobby-btn-start" onClick={lobby}>
+                            Lobby
                         </button>
                     </div>
                 )}
