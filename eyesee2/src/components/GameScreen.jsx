@@ -3,7 +3,7 @@ import socket from "../socket";
 
 
 
-export const GameScreen = ({ setScreen, rounds, roomCode, playerName, initialTimer, initialTimerDuration }) => {
+export const GameScreen = ({ setScreen, rounds, roomCode, playerName, isHost, initialTimer, initialTimerDuration }) => {
     // const defaultTimer = 10;
     const [score, setScore] = useState(0)
     const [message, setMessage] = useState("")
@@ -175,7 +175,7 @@ export const GameScreen = ({ setScreen, rounds, roomCode, playerName, initialTim
                 {gameOver && (
                     <div className="game-over-box">
                         <h1>🏆 {winner} wins!</h1>
-                        <button className="lobby-btn-start" onClick={restartGame}>
+                        <button className="lobby-btn-start" onClick={isHost ? restartGame : undefined}>
                             Play Again
                         </button>
                         <button className="lobby-btn-start" onClick={lobby}>

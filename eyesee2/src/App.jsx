@@ -68,7 +68,7 @@ function App() {
     <div >
       {screen === "home" && <HomeScreen setScreen={setScreen} setPlayerName={setPlayerName} playerName={playerName} setRoomCode={setRoomCode} />}
       {screen === "lobby" && (<Lobby setScreen={setScreen} playerName={playerName} roomCode={roomCode} isHost={isHost} />)}
-      {screen === "game" && <GameScreen setScreen={setScreen} rounds={rounds} roomCode={roomCode} playerName={playerName} initialTimer={timer}
+      {screen === "game" && <GameScreen setScreen={setScreen} rounds={rounds} roomCode={roomCode} isHost={isHost} playerName={playerName} initialTimer={timer}
         initialTimerDuration={timerDuration} />}
     </div>
   )

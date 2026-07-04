@@ -104,49 +104,59 @@ io.on('connection', (socket) => {
     })
 
     socket.on('startGame', (data) => {
-        console.log(`game starting in room ${data.roomCode}`)
-        io.to(data.roomCode).emit('gameStarted', {
-            rounds: rounds,
-            currentRound: 0
-        })
         const roomCode = data.roomCode
-        rooms[roomCode].currentRound = 0
-        rooms[data.roomCode].timer = 10
+        const room = rooms[roomCode]
+        if (!room) return
+        room.players.forEach(p => p.score = 0)
 
-        const interval = setInterval(() => {
-            rooms[roomCode].timer -= 1
+        const timerDuration = Number(data.timer) || 0
+        room.gameStarted = true
+        room.currentRound = 0
+        room.timerDuration = timerDuration
+        room.timer = timerDuration
+
+        io.to(roomCode).emit('gameStarted', {
+            rounds,
+            currentRound: 0,
+            timer: room.timer,
+            timerDuration: room.timerDuration
+        })
+
+        if (timerDuration === 0) return
+
+        room.interval = setInterval(() => {
+            room.timer -= 1
+
             io.to(roomCode).emit('timerTick', {
-                timer: rooms[roomCode].timer
+                timer: room.timer
             })
 
-            if (rooms[roomCode].timer === 0) {
-                rooms[roomCode].currentRound += 1
+            if (room.timer === 0) {
+                room.currentRound += 1
 
-                if (rooms[roomCode].currentRound >= rounds.length) {
-                    clearInterval(interval)
+                if (room.currentRound >= rounds.length) {
+                    clearInterval(room.interval)
 
-                    const winner = rooms[roomCode].players.reduce((a, b) =>
+                    const winner = room.players.reduce((a, b) =>
                         a.score > b.score ? a : b
                     )
+
                     io.to(roomCode).emit('gameOver', {
                         winner: winner.name,
-                        players: rooms[roomCode].players
+                        players: room.players
                     })
+
                     return
                 }
-                // reset timer for next round
-                rooms[roomCode].timer = 10
 
-                // tell both players new round started
+                room.timer = room.timerDuration
+
                 io.to(roomCode).emit('newRound', {
-                    currentRound: rooms[roomCode].currentRound
+                    currentRound: room.currentRound,
+                    timer: room.timer
                 })
             }
-
         }, 1000)
-
-        // store interval so we can stop it later
-        rooms[roomCode].interval = interval
     })
 
     socket.on('cardMatch', (data) => {
@@ -175,10 +185,11 @@ io.on('connection', (socket) => {
         }
 
         // reset timer for next round
-        rooms[roomCode].timer = 10
+        rooms[roomCode].timer = rooms[roomCode].timerDuration
 
         io.to(roomCode).emit('matchDone', {
-            currentRound: rooms[roomCode].currentRound
+            currentRound: rooms[roomCode].currentRound,
+            timer: rooms[roomCode].timer
         })
 
         io.to(roomCode).emit('timerTick', {
@@ -199,15 +210,17 @@ io.on('connection', (socket) => {
 
         // reset room state
         rooms[roomCode].currentRound = 0
-        rooms[roomCode].timer = 10
+        rooms[roomCode].timer = rooms[roomCode].timerDuration
         rooms[roomCode].players.forEach(p => p.score = 0)
 
         // restart game for both players
         io.to(roomCode).emit('gameRestarted', {
             rounds: rounds,
-            currentRound: 0
+            currentRound: 0,
+            timer: rooms[roomCode].timer,
+            timerDuration: rooms[roomCode].timerDuration
         })
-
+        if (rooms[roomCode].timerDuration === 0) return
         // start timer again
         const interval = setInterval(() => {
             rooms[roomCode].timer -= 1
@@ -229,7 +242,7 @@ io.on('connection', (socket) => {
                     return
                 }
 
-                rooms[roomCode].timer = 10
+                rooms[roomCode].timer = rooms[roomCode].timerDuration
                 io.to(roomCode).emit('newRound', {
                     currentRound: rooms[roomCode].currentRound
                 })
@@ -252,4 +265,3 @@ server.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`)
 }
 )
-
