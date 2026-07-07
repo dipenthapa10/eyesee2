@@ -115,11 +115,19 @@ io.on('connection', (socket) => {
         room.timerDuration = timerDuration
         room.timer = timerDuration
 
+        const roundCount = Number(data.roundCount) || 15
+        const safeRoundCount = Math.min(Math.max(roundCount, 10), 20)
+        const gameRounds = rounds.slice(0, safeRoundCount)
+
+        room.roundCount = safeRoundCount
+        room.rounds = gameRounds
+
         io.to(roomCode).emit('gameStarted', {
-            rounds,
+            rounds: room.rounds,
             currentRound: 0,
             timer: room.timer,
-            timerDuration: room.timerDuration
+            timerDuration: room.timerDuration,
+            roundCount: room.roundCount
         })
 
         if (timerDuration === 0) return
@@ -134,7 +142,7 @@ io.on('connection', (socket) => {
             if (room.timer === 0) {
                 room.currentRound += 1
 
-                if (room.currentRound >= rounds.length) {
+                if (room.currentRound >= room.rounds.length) {
                     clearInterval(room.interval)
 
                     const winner = room.players.reduce((a, b) =>
@@ -170,7 +178,7 @@ io.on('connection', (socket) => {
         rooms[roomCode].currentRound += 1
 
         // no more rounds
-        if (rooms[roomCode].currentRound >= rounds.length) {
+        if (rooms[roomCode].currentRound >= rooms[roomCode].rounds.length) {
             clearInterval(rooms[roomCode].interval)
 
             const winner = rooms[roomCode].players.reduce((a, b) =>
@@ -215,10 +223,11 @@ io.on('connection', (socket) => {
 
         // restart game for both players
         io.to(roomCode).emit('gameRestarted', {
-            rounds: rounds,
+            rounds: rooms[roomCode].rounds,
             currentRound: 0,
             timer: rooms[roomCode].timer,
-            timerDuration: rooms[roomCode].timerDuration
+            timerDuration: rooms[roomCode].timerDuration,
+            roundCount: rooms[roomCode].roundCount
         })
         if (rooms[roomCode].timerDuration === 0) return
         // start timer again
@@ -231,7 +240,7 @@ io.on('connection', (socket) => {
             if (rooms[roomCode].timer === 0) {
                 rooms[roomCode].currentRound += 1
 
-                if (rooms[roomCode].currentRound >= rounds.length) {
+                if (rooms[roomCode].currentRound >= rooms[roomCode].rounds.length) {
                     const winner = rooms[roomCode].players.reduce((a, b) =>
                         a.score > b.score ? a : b
                     )

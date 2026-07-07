@@ -4,6 +4,7 @@ import socket from '../socket'
 export const Lobby = ({ setScreen, playerName, roomCode, isHost }) => {
     const [players, setPlayers] = useState([])
     const [selectedTimer, setSelectedTimer] = useState(0)
+    const [selectedRounds, setSelectedRounds] = useState(15)
 
     useEffect(() => {
         socket.on('roomCreated', (data) => {
@@ -30,7 +31,8 @@ export const Lobby = ({ setScreen, playerName, roomCode, isHost }) => {
 
         socket.emit('startGame', {
             roomCode,
-            timer: selectedTimer
+            timer: selectedTimer,
+            roundCount: selectedRounds
         })
     }
 
@@ -40,7 +42,7 @@ export const Lobby = ({ setScreen, playerName, roomCode, isHost }) => {
                 <p className="lobby-logo">EyeSee2</p>
 
                 <div className="lobby-round-timer">
-                    <span>Round:  </span>
+                    <span>Round: {selectedRounds} </span>
                     <span>Timer: {selectedTimer === 0 ? 'No Limit' : selectedTimer} </span>
                 </div>
 
@@ -59,6 +61,27 @@ export const Lobby = ({ setScreen, playerName, roomCode, isHost }) => {
                     </div>
                     <div className="lobby-setting-row">
                         <span>Rounds</span>
+                        {isHost ? (
+                            <select
+                                className="lobby-select"
+                                value={selectedRounds}
+                                onChange={(e) => setSelectedRounds(Number(e.target.value))}
+                            >
+                                <option value={10}>10 rounds</option>
+                                <option value={11}>11 rounds</option>
+                                <option value={12}>12 rounds</option>
+                                <option value={13}>13 rounds</option>
+                                <option value={14}>14 rounds</option>
+                                <option value={15}>15 rounds</option>
+                                <option value={16}>16 rounds</option>
+                                <option value={17}>17 rounds</option>
+                                <option value={18}>18 rounds</option>
+                                <option value={19}>19 rounds</option>
+                                <option value={20}>20 rounds</option>
+                            </select>
+                        ) : (
+                            <span>{selectedRounds} rounds</span>
+                        )}
 
                     </div>
                     <div className="lobby-setting-row">

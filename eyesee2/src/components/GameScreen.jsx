@@ -20,11 +20,7 @@ export const GameScreen = ({ setScreen, rounds, roomCode, playerName, isHost, in
 
 
     useEffect(() => {
-        socket.on('gameStarted', (data) => {
-            setRoundIndex(data.currentRound)
-            setTimer(data.timer)
-            setTimerDuration(data.timerDuration)
-        })
+
 
         socket.on('timerTick', (data) => {
             setTimer(data.timer)
