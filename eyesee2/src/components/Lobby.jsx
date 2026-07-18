@@ -1,31 +1,11 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faCrown } from '@fortawesome/free-solid-svg-icons'
 import socket from '../socket'
 
-export const Lobby = ({ setScreen, playerName, roomCode, isHost }) => {
-    const [players, setPlayers] = useState([])
+export const Lobby = ({ playerName, roomCode, isHost, players }) => {
     const [selectedTimer, setSelectedTimer] = useState(0)
     const [selectedRounds, setSelectedRounds] = useState(15)
-
-    useEffect(() => {
-        socket.on('roomCreated', (data) => {
-            setPlayers(data.players)
-        })
-
-        socket.on('playerJoined', (data) => {
-            setPlayers(data.players)
-
-        })
-        socket.on('joinError', (data) => {
-            console.log("joinError received!", data)
-
-        })
-
-        return () => {
-            socket.off('roomCreated')
-            socket.off('playerJoined')
-            socket.off('joinError')
-        }
-    }, [])
 
     const handleStartGame = () => {
 
@@ -126,22 +106,29 @@ export const Lobby = ({ setScreen, playerName, roomCode, isHost }) => {
                         <div className="lobby-player-avatar">
                             {players[0].name[0].toUpperCase()}
                         </div>
-                        <div className="lobby-player-info">
-                            <p className="lobby-player-name">{players[0].name}</p>
-
+                        <div className="lobby-player-info lobby-host-info">
+                            <div className="lobby-host-name-row">
+                                <p className="lobby-player-name">{players[0].name}</p>
+                                <span className="lobby-player-badge lobby-host-badge" title="Host">
+                                    <FontAwesomeIcon icon={faCrown} aria-label="Host" />
+                                </span>
+                            </div>
                         </div>
-                        <span className="lobby-player-badge">Host </span>
                     </div>
                 ) : (
                     <div className="lobby-player-box">
                         <div className="lobby-player-avatar">
                             {playerName ? playerName[0].toUpperCase() : 'H'}
                         </div>
-                        <div className="lobby-player-info">
-                            <p className="lobby-player-name">{playerName || 'Host'}</p>
+                        <div className="lobby-player-info lobby-host-info">
+                            <div className="lobby-host-name-row">
+                                <p className="lobby-player-name">{playerName || 'Host'}</p>
+                                <span className="lobby-player-badge lobby-host-badge" title="Host">
+                                    <FontAwesomeIcon icon={faCrown} aria-label="Host" />
+                                </span>
+                            </div>
                             <p className="lobby-player-sub">room host</p>
                         </div>
-                        <span className="lobby-player-badge">Host </span>
                     </div>
                 )}
 

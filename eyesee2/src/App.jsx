@@ -13,6 +13,7 @@ function App() {
   const [timerDuration, setTimerDuration] = useState(0)
   const [roomCode, setRoomCode] = useState("")
   const [isHost, setIsHost] = useState(false)
+  const [players, setPlayers] = useState([])
 
   useEffect(() => {
     socket.on("connect", () => {
@@ -27,12 +28,14 @@ function App() {
   useEffect(() => {
     socket.on("roomCreated", (data) => {
       setRoomCode(data.roomCode)
+      setPlayers(data.players)
       setScreen("lobby")
       setIsHost(true)
     })
 
     socket.on("playerJoined", (data) => {
       setRoomCode(data.roomCode)
+      setPlayers(data.players)
       setScreen("lobby")
     })
 
@@ -52,11 +55,19 @@ function App() {
       setTimerDuration(data.timerDuration)
     })
 
+    socket.on("hostDisconnected", (data) => {
+      setRoomCode(data.roomCode)
+      setPlayers(data.players)
+      setIsHost(data.hostId === socket.id)
+      setScreen("lobby")
+    })
+
     return () => {
       socket.off("roomCreated")
       socket.off("playerJoined")
       socket.off("gameStarted")
       socket.off("gameRestarted")
+      socket.off("hostDisconnected")
     }
   }, [])
 
@@ -77,6 +88,7 @@ function App() {
           playerName={playerName}
           roomCode={roomCode}
           isHost={isHost}
+          players={players}
         />
       )}
 
@@ -87,6 +99,7 @@ function App() {
           roomCode={roomCode}
           isHost={isHost}
           playerName={playerName}
+          initialPlayers={players}
           initialTimer={timer}
           initialTimerDuration={timerDuration}
         />

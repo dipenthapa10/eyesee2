@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react"
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faCrown } from '@fortawesome/free-solid-svg-icons'
 import socket from "../socket";
 
 
 
-export const GameScreen = ({ setScreen, rounds, roomCode, playerName, isHost, initialTimer, initialTimerDuration }) => {
+export const GameScreen = ({ setScreen, rounds, playerName, isHost, initialPlayers, initialTimer, initialTimerDuration }) => {
     // const defaultTimer = 10;
     const [score, setScore] = useState(0)
     const [message, setMessage] = useState("")
@@ -12,7 +14,7 @@ export const GameScreen = ({ setScreen, rounds, roomCode, playerName, isHost, in
     const [timer, setTimer] = useState(initialTimer)
     const [timerDuration, setTimerDuration] = useState(initialTimerDuration)
     const [gameStart, setGameStart] = useState(true)
-    const [players, setPlayers] = useState([])
+    const [players, setPlayers] = useState(initialPlayers)
     const [winner, setWinner] = useState("")
 
 
@@ -135,6 +137,9 @@ export const GameScreen = ({ setScreen, rounds, roomCode, playerName, isHost, in
 
                 <div className="lobby-round-timer">
                     <span>Round: {roundIndex + 1} / {rounds.length}</span>
+                    <span className="game-status-crown" title="Host">
+                        <FontAwesomeIcon icon={faCrown} aria-label="Host" />
+                    </span>
                     <span>Timer: {timerDuration === 0 ? 'No Limit' : timer}</span>
                 </div>
 

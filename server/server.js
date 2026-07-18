@@ -25,7 +25,7 @@ const PORT = 3001
 const rooms = {}
 
 // game data
-const { rounds } = require('./gameData')
+const { createRounds } = require('./gameData')
 
 const generateRoomCode = () => {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
@@ -99,8 +99,34 @@ io.on('connection', (socket) => {
 
 
     //when player disconnects 
-    socket.on('disconnect', () => {
+    // `disconnecting` runs before Socket.IO removes the socket from its rooms.
+    socket.on('disconnecting', () => {
         console.log('player disconnects:', socket.id)
+
+        const roomCode = [...socket.rooms].find(room => room !== socket.id)
+        const room = rooms[roomCode]
+
+        if (!room || room.hostId !== socket.id) return
+
+        // A game cannot continue without its host. Stop its timer before
+        // returning the remaining players to the lobby.
+        clearInterval(room.interval)
+        room.gameStarted = false
+        room.players = room.players.filter(player => player.id !== socket.id)
+
+        if (room.players.length === 0) {
+            delete rooms[roomCode]
+            return
+        }
+
+        // Promote the next player so the room can be started again.
+        room.hostId = room.players[0].id
+
+        io.to(roomCode).emit('hostDisconnected', {
+            roomCode,
+            players: room.players,
+            hostId: room.hostId
+        })
     })
 
     socket.on('startGame', (data) => {
@@ -117,7 +143,7 @@ io.on('connection', (socket) => {
 
         const roundCount = Number(data.roundCount) || 15
         const safeRoundCount = Math.min(Math.max(roundCount, 10), 20)
-        const gameRounds = rounds.slice(0, safeRoundCount)
+        const gameRounds = createRounds(safeRoundCount)
 
         room.roundCount = safeRoundCount
         room.rounds = gameRounds
