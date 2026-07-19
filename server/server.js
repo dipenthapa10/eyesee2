@@ -23,6 +23,7 @@ app.use(express.urlencoded({ extended: true })) // server read from data
 //setup for static folder  ( yet to do)  
 const PORT = 3001
 const rooms = {}
+const ROUND_RESULT_DELAY = 800
 
 // game data
 const { createRounds } = require('./gameData')
@@ -54,6 +55,7 @@ io.on('connection', (socket) => {
             }],
             gameStarted: false,
             currentRound: 0,
+            settings: { timer: 0, roundCount: 15, cooldownSeconds: 5 },
             deck: []
         };
 
@@ -63,7 +65,8 @@ io.on('connection', (socket) => {
         socket.emit('roomCreated', {
             roomCode,
             players: rooms[roomCode].players,
-            hostId: rooms[roomCode].hostId
+            hostId: rooms[roomCode].hostId,
+            settings: rooms[roomCode].settings
 
         })
     })
@@ -89,7 +92,8 @@ io.on('connection', (socket) => {
             io.to(data.roomCode).emit('playerJoined', {
                 players: rooms[data.roomCode].players,
                 hostId: rooms[data.roomCode].hostId,
-                roomCode: data.roomCode
+                roomCode: data.roomCode,
+                settings: rooms[data.roomCode].settings
             })
         }
         else {
@@ -106,20 +110,39 @@ io.on('connection', (socket) => {
         const roomCode = [...socket.rooms].find(room => room !== socket.id)
         const room = rooms[roomCode]
 
-        if (!room || room.hostId !== socket.id) return
+        if (!room) return
+
+        if (room.hostId !== socket.id) {
+            const player = room.players.find(existingPlayer => existingPlayer.id === socket.id)
+            if (!player) return
+
+            if (room.gameStarted) {
+                player.connected = false
+            } else {
+                room.players = room.players.filter(existingPlayer => existingPlayer.id !== socket.id)
+            }
+
+            io.to(roomCode).emit('playerDisconnected', {
+                players: room.players,
+                playerId: socket.id
+            })
+            return
+        }
 
         // A game cannot continue without its host. Stop its timer before
         // returning the remaining players to the lobby.
         clearInterval(room.interval)
         room.gameStarted = false
-        room.players = room.players.filter(player => player.id !== socket.id)
+        room.players = room.players.filter(
+            player => player.id !== socket.id && player.connected !== false
+        )
 
         if (room.players.length === 0) {
             delete rooms[roomCode]
             return
         }
 
-        // Promote the next player so the room can be started again.
+        // Promote the next connected player so the room can be started again.
         room.hostId = room.players[0].id
 
         io.to(roomCode).emit('hostDisconnected', {
@@ -129,19 +152,39 @@ io.on('connection', (socket) => {
         })
     })
 
+    socket.on('updateLobbySettings', (data) => {
+        const room = rooms[data.roomCode]
+        if (!room || room.hostId !== socket.id || room.gameStarted) return
+
+        const timer = Number(data.timer)
+        const roundCount = Number(data.roundCount)
+        const cooldownSeconds = Number(data.cooldownSeconds)
+
+        if (![0, 5, 10, 15].includes(timer)) return
+        if (!Number.isInteger(roundCount) || roundCount < 10 || roundCount > 20) return
+        if (!Number.isInteger(cooldownSeconds) || cooldownSeconds < 3 || cooldownSeconds > 10) return
+
+        room.settings = { timer, roundCount, cooldownSeconds }
+        io.to(data.roomCode).emit('lobbySettingsUpdated', { settings: room.settings })
+    })
+
     socket.on('startGame', (data) => {
         const roomCode = data.roomCode
         const room = rooms[roomCode]
-        if (!room) return
-        room.players.forEach(p => p.score = 0)
+        if (!room || room.hostId !== socket.id) return
+        room.players.forEach(p => {
+            p.score = 0
+            delete p.cooldownUntil
+        })
 
-        const timerDuration = Number(data.timer) || 0
+        const timerDuration = room.settings.timer
         room.gameStarted = true
+        room.roundLocked = false
         room.currentRound = 0
         room.timerDuration = timerDuration
         room.timer = timerDuration
 
-        const roundCount = Number(data.roundCount) || 15
+        const roundCount = room.settings.roundCount
         const safeRoundCount = Math.min(Math.max(roundCount, 10), 20)
         const gameRounds = createRounds(safeRoundCount)
 
@@ -193,46 +236,118 @@ io.on('connection', (socket) => {
         }, 1000)
     })
 
+    socket.on('wrongAnswer', (data) => {
+        const roomCode = [...socket.rooms].find(r => r !== socket.id)
+        const room = rooms[roomCode]
+        const currentRound = room?.rounds?.[room.currentRound]
+
+        if (
+            !room ||
+            room.roundLocked ||
+            data.roundIndex !== room.currentRound ||
+            data.symbol === currentRound?.match
+        ) return
+
+        const player = room.players.find(existingPlayer => existingPlayer.id === socket.id)
+        if (!player || player.cooldownUntil > Date.now()) return
+
+        const cooldownDuration = room.settings.cooldownSeconds * 1000
+        player.cooldownUntil = Date.now() + cooldownDuration
+        io.to(roomCode).emit('cooldownUpdated', { players: room.players })
+
+        setTimeout(() => {
+            if (!rooms[roomCode] || player.cooldownUntil > Date.now()) return
+
+            delete player.cooldownUntil
+            io.to(roomCode).emit('cooldownUpdated', { players: room.players })
+        }, cooldownDuration)
+    })
+
     socket.on('cardMatch', (data) => {
         const roomCode = [...socket.rooms].find(r => r !== socket.id)
 
         if (!roomCode || !rooms[roomCode]) return
 
-        const player = rooms[roomCode].players.find(p => p.id === socket.id)
-        if (player) player.score += 1
+        const room = rooms[roomCode]
+        const currentRound = room.rounds?.[room.currentRound]
 
-        rooms[roomCode].currentRound += 1
+        // Accept only the first correct click for the current round.
+        const player = room.players.find(p => p.id === socket.id)
 
-        // no more rounds
-        if (rooms[roomCode].currentRound >= rooms[roomCode].rounds.length) {
-            clearInterval(rooms[roomCode].interval)
+        if (
+            room.roundLocked ||
+            data.roundIndex !== room.currentRound ||
+            data.symbol !== currentRound?.match ||
+            !player ||
+            player.cooldownUntil > Date.now()
+        ) return
 
-            const winner = rooms[roomCode].players.reduce((a, b) =>
-                a.score > b.score ? a : b)
+        room.roundLocked = true
+        clearInterval(room.interval)
 
+        player.score += 1
 
-            io.to(roomCode).emit('gameOver', {
-                winner: winner.name,
-                players: rooms[roomCode].players
+        io.to(roomCode).emit('scoreUpdated', { players: room.players })
+        io.to(roomCode).emit('roundWon', {
+            winner: player?.name || 'A player',
+            players: room.players
+        })
+
+        setTimeout(() => {
+            // The room can disappear while the result message is on screen.
+            if (!rooms[roomCode]) return
+
+            room.currentRound += 1
+
+            if (room.currentRound >= room.rounds.length) {
+                const winner = room.players.reduce((a, b) =>
+                    a.score > b.score ? a : b
+                )
+
+                io.to(roomCode).emit('gameOver', {
+                    winner: winner.name,
+                    players: room.players
+                })
+                return
+            }
+
+            room.timer = room.timerDuration
+            room.roundLocked = false
+            io.to(roomCode).emit('matchDone', {
+                currentRound: room.currentRound,
+                timer: room.timer
             })
-            return
-        }
+            io.to(roomCode).emit('timerTick', { timer: room.timer })
 
-        // reset timer for next round
-        rooms[roomCode].timer = rooms[roomCode].timerDuration
+            if (room.timerDuration === 0) return
 
-        io.to(roomCode).emit('matchDone', {
-            currentRound: rooms[roomCode].currentRound,
-            timer: rooms[roomCode].timer
-        })
+            room.interval = setInterval(() => {
+                room.timer -= 1
+                io.to(roomCode).emit('timerTick', { timer: room.timer })
 
-        io.to(roomCode).emit('timerTick', {
-            timer: rooms[roomCode].timer
-        })
+                if (room.timer !== 0) return
 
-        io.to(roomCode).emit('scoreUpdated', {
-            players: rooms[roomCode].players
-        })
+                room.currentRound += 1
+
+                if (room.currentRound >= room.rounds.length) {
+                    clearInterval(room.interval)
+                    const winner = room.players.reduce((a, b) =>
+                        a.score > b.score ? a : b
+                    )
+                    io.to(roomCode).emit('gameOver', {
+                        winner: winner.name,
+                        players: room.players
+                    })
+                    return
+                }
+
+                room.timer = room.timerDuration
+                io.to(roomCode).emit('newRound', {
+                    currentRound: room.currentRound,
+                    timer: room.timer
+                })
+            }, 1000)
+        }, ROUND_RESULT_DELAY)
     })
 
     socket.on('restartGame', () => {
@@ -244,8 +359,12 @@ io.on('connection', (socket) => {
 
         // reset room state
         rooms[roomCode].currentRound = 0
+        rooms[roomCode].roundLocked = false
         rooms[roomCode].timer = rooms[roomCode].timerDuration
-        rooms[roomCode].players.forEach(p => p.score = 0)
+        rooms[roomCode].players.forEach(p => {
+            p.score = 0
+            delete p.cooldownUntil
+        })
 
         // restart game for both players
         io.to(roomCode).emit('gameRestarted', {

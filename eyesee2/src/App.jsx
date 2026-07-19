@@ -13,7 +13,9 @@ function App() {
   const [timerDuration, setTimerDuration] = useState(0)
   const [roomCode, setRoomCode] = useState("")
   const [isHost, setIsHost] = useState(false)
+  const [hostId, setHostId] = useState("")
   const [players, setPlayers] = useState([])
+  const [lobbySettings, setLobbySettings] = useState({ timer: 0, roundCount: 15, cooldownSeconds: 5 })
 
   useEffect(() => {
     socket.on("connect", () => {
@@ -29,6 +31,8 @@ function App() {
     socket.on("roomCreated", (data) => {
       setRoomCode(data.roomCode)
       setPlayers(data.players)
+      setHostId(data.hostId)
+      setLobbySettings(data.settings)
       setScreen("lobby")
       setIsHost(true)
     })
@@ -36,6 +40,8 @@ function App() {
     socket.on("playerJoined", (data) => {
       setRoomCode(data.roomCode)
       setPlayers(data.players)
+      setHostId(data.hostId)
+      setLobbySettings(data.settings)
       setScreen("lobby")
     })
 
@@ -58,8 +64,17 @@ function App() {
     socket.on("hostDisconnected", (data) => {
       setRoomCode(data.roomCode)
       setPlayers(data.players)
+      setHostId(data.hostId)
       setIsHost(data.hostId === socket.id)
       setScreen("lobby")
+    })
+
+    socket.on("playerDisconnected", (data) => {
+      setPlayers(data.players)
+    })
+
+    socket.on("lobbySettingsUpdated", (data) => {
+      setLobbySettings(data.settings)
     })
 
     return () => {
@@ -68,6 +83,8 @@ function App() {
       socket.off("gameStarted")
       socket.off("gameRestarted")
       socket.off("hostDisconnected")
+      socket.off("playerDisconnected")
+      socket.off("lobbySettingsUpdated")
     }
   }, [])
 
@@ -88,7 +105,9 @@ function App() {
           playerName={playerName}
           roomCode={roomCode}
           isHost={isHost}
+          hostId={hostId}
           players={players}
+          lobbySettings={lobbySettings}
         />
       )}
 
@@ -98,6 +117,7 @@ function App() {
           rounds={rounds}
           roomCode={roomCode}
           isHost={isHost}
+          hostId={hostId}
           playerName={playerName}
           initialPlayers={players}
           initialTimer={timer}

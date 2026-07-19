@@ -52,15 +52,6 @@ body {
     box-shadow: 0 8px 30px rgba(79, 70, 229, 0.08);
 }
 
-.input-label {
-    font-size: 11px;
-    font-weight: 700;
-    color: #000000;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin-bottom: 6px;
-}
-
 input::placeholder {
     color: #000000;
     opacity: 0.75;
@@ -134,18 +125,11 @@ input::placeholder {
 .lobby-page {
     display: grid;
     grid-template-columns: 3.1fr 1fr;
-    min-height: 100vh;
+    height: 100dvh;
+    min-height: 0;
+    overflow: hidden;
     font-family: 'Happy Monkey', cursive;
     border: 2px solid #222;
-    background: white;
-}
-
-.lobby-left {
-    padding: 28px;
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    border-right: 2px solid #222;
     background: white;
 }
 
@@ -155,27 +139,8 @@ input::placeholder {
     color: #111;
 }
 
-.lobby-round-timer {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px 16px;
-    background: #f5f5f5;
-    border-radius: 10px;
-    border: 2px solid #222;
-    font-family: 'Happy Monkey', cursive;
-    font-size: 13px;
-    color: #333;
-}
-
-.lobby-round-timer span {
-    font-size: 16px;
-    font-weight: bold;
-    color: #111;
-}
-
-.game-status-crown {
-    color: #d4a017 !important;
+.timer-icon {
+    margin-right: 6px;
 }
 
 .lobby-settings-box {
@@ -250,27 +215,6 @@ input::placeholder {
     background: #333;
 }
 
-.lobby-btn-back {
-    width: 100%;
-    padding: 10px;
-    background: white;
-    color: #555;
-    border: 2px solid #ddd;
-    border-radius: 12px;
-    font-family: 'Happy Monkey', cursive;
-    font-size: 14px;
-    cursor: pointer;
-}
-
-/* Right side */
-.lobby-right {
-    background: #757575;
-    padding: 24px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
-
 .lobby-player-box {
     background: white;
     border-radius: 12px;
@@ -315,11 +259,64 @@ input::placeholder {
     gap: 6px;
 }
 
+.game-player-name-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
 .lobby-host-badge {
     color: #d4a017;
     padding: 0;
     background: transparent;
     border: 0;
+}
+
+.player-inactive {
+    opacity: 0.4;
+    filter: grayscale(1);
+}
+
+.game-player-list .lobby-player-box.player-cooldown {
+    border-color: #222;
+    background: #d32f2f !important;
+    color: #fff;
+}
+
+.game-player-list .player-cooldown .lobby-player-avatar {
+    background: #111;
+}
+
+.game-player-list .player-cooldown .lobby-player-name {
+    color: #fff;
+}
+
+.player-status-tag {
+    display: inline-block;
+    margin-top: 3px;
+    color: #555;
+    font-size: 11px;
+    font-weight: bold;
+}
+
+.player-rank {
+    width: 34px;
+    color: #111;
+    font-size: 15px;
+    font-weight: bold;
+    text-align: center;
+}
+
+.leaderboard-row {
+    display: grid;
+    grid-template-columns: 34px minmax(0, 1fr);
+    align-items: center;
+    gap: 5px;
+    will-change: transform;
+}
+
+.leaderboard-row .lobby-player-box {
+    min-width: 0;
 }
 
 .lobby-player-name {
@@ -342,26 +339,13 @@ input::placeholder {
 
 .game-cards-area {
     flex: 1;
+    min-height: 0;
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     align-items: center;
     justify-content: center;
-    gap: 20px;
-}
-
-.game-message-box {
-    background: white;
-    border-radius: 12px;
-    padding: 20px;
-    text-align: center;
-    border: 2px solid #222;
-    margin-top: auto;
-}
-
-.game-message-text {
-    font-family: 'Happy Monkey', cursive;
-    font-size: 20px;
-    color: #111;
+    gap: clamp(16px, 3vw, 36px);
+    width: 100%;
 }
 
 .game-over-box {
@@ -385,8 +369,9 @@ input::placeholder {
 =========================== */
 
 .card {
-    width: 320px;
-    height: 320px;
+    width: clamp(190px, min(43%, 54vh), 430px);
+    aspect-ratio: 1;
+    height: auto;
     border-radius: 50%;
     background: white;
     border: 4px solid #222;
@@ -452,4 +437,296 @@ input::placeholder {
     min-width: 220px;
     margin-top: 0;
     display: block;
+}
+
+/* Game layout experiment: large card stage with a slim scoreboard. */
+.game-page {
+    display: grid;
+    grid-template-columns: clamp(220px, 19vw, 280px) minmax(0, 1fr) clamp(220px, 19vw, 280px);
+    grid-template-rows: auto minmax(0, 1fr);
+    height: 100dvh;
+    overflow: hidden;
+    font-family: 'Happy Monkey', cursive;
+    background: #f8f8f8;
+}
+
+.game-main {
+    grid-column: 2;
+    grid-row: 2;
+    position: relative;
+    min-width: 0;
+    min-height: 0;
+    padding: clamp(16px, 3vh, 28px);
+    display: flex;
+    flex-direction: column;
+    gap: clamp(10px, 2vh, 18px);
+    background: radial-gradient(circle at 50% 45%, #ffffff 0%, #f5f5f5 72%);
+}
+
+.game-hud {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    align-items: center;
+    gap: 24px;
+    padding: 10px 16px;
+    border: 2px solid #222;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.9);
+    color: #111;
+    font-size: 15px;
+    font-weight: bold;
+}
+
+.game-hud .lobby-logo {
+    font-size: 30px;
+}
+
+.game-main .game-cards-area {
+    min-height: 0;
+    flex: 1;
+    flex-wrap: nowrap;
+    gap: clamp(16px, 3vw, 36px);
+}
+
+.game-round-message {
+    align-self: center;
+    min-height: 28px;
+    padding: 5px 14px;
+    border-radius: 999px;
+    background: #111;
+    color: #fff;
+    font-size: 14px;
+    text-align: center;
+}
+
+.game-sidebar {
+    grid-column: 3;
+    grid-row: 2;
+    min-height: 0;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    background: #757575;
+    border-left: 2px solid #222;
+}
+
+.game-player-sidebar {
+    grid-column: 1;
+    grid-row: 2;
+    min-height: 0;
+    padding: 14px;
+    overflow-y: auto;
+    background: #757575;
+    border-right: 2px solid #222;
+}
+
+.game-player-list {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.game-player-list .lobby-player-box {
+    padding: 10px 12px;
+    gap: 9px;
+    background: rgba(255, 255, 255, 0.94);
+}
+
+.game-player-list .lobby-player-avatar {
+    width: 34px;
+    height: 34px;
+    font-size: 14px;
+}
+
+.game-player-list .lobby-player-name {
+    font-size: 14px;
+}
+
+.game-player-list .lobby-player-badge {
+    padding: 3px 7px;
+    border: 1px solid #ddd;
+    border-radius: 20px;
+    background: #f0f0f0;
+    color: #111;
+    font-size: 11px;
+}
+
+/* Lobby uses the same header + left/center/right structure as the game. */
+.lobby-layout {
+    grid-template-columns: clamp(220px, 19vw, 280px) minmax(0, 1fr) clamp(220px, 19vw, 280px);
+    grid-template-rows: auto minmax(0, 1fr);
+    border: 0;
+}
+
+.lobby-hud {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    align-items: center;
+    gap: 24px;
+    padding: 10px 16px;
+    border-bottom: 2px solid #222;
+    background: rgba(255, 255, 255, 0.95);
+    color: #111;
+    font-size: 15px;
+    font-weight: bold;
+}
+
+.lobby-hud .lobby-logo {
+    font-size: 30px;
+}
+
+.lobby-main {
+    grid-column: 2;
+    grid-row: 2;
+    min-width: 0;
+    min-height: 0;
+    padding: clamp(16px, 3vh, 28px);
+    display: flex;
+    flex-direction: column;
+    gap: clamp(10px, 2vh, 18px);
+    background: radial-gradient(circle at 50% 45%, #ffffff 0%, #f5f5f5 72%);
+}
+
+.lobby-player-sidebar,
+.lobby-empty-sidebar {
+    grid-row: 2;
+    min-height: 0;
+    padding: 14px;
+    background: #757575;
+}
+
+.lobby-player-sidebar {
+    grid-column: 1;
+    overflow-y: auto;
+    border-right: 2px solid #222;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.lobby-empty-sidebar {
+    grid-column: 3;
+    border-left: 2px solid #222;
+}
+
+.lobby-player-sidebar .lobby-player-box {
+    padding: 10px 12px;
+    gap: 9px;
+}
+
+.lobby-player-sidebar .lobby-player-avatar {
+    width: 34px;
+    height: 34px;
+    font-size: 14px;
+}
+
+.lobby-player-sidebar .lobby-player-name {
+    font-size: 14px;
+}
+
+/* One shared header treatment for the lobby and active game. */
+.app-hud {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    align-items: center;
+    gap: 24px;
+    min-height: 64px;
+    padding: 10px 20px;
+    border: 0;
+    border-bottom: 2px solid #222;
+    border-radius: 0;
+    background: rgba(255, 255, 255, 0.95);
+    color: #111;
+    font-size: 15px;
+    font-weight: bold;
+}
+
+.app-hud .lobby-logo {
+    font-size: 30px;
+    line-height: 1;
+}
+
+@media (max-width: 780px) {
+    .game-page {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto auto minmax(0, 1fr) auto;
+    }
+
+    .game-hud,
+    .game-player-sidebar,
+    .game-main,
+    .game-sidebar {
+        grid-column: 1;
+    }
+
+    .game-hud {
+        grid-row: 1;
+    }
+
+    .game-player-sidebar {
+        grid-row: 2;
+    }
+
+    .game-main {
+        grid-row: 3;
+    }
+
+    .game-sidebar {
+        grid-row: 4;
+    }
+
+    .game-player-list {
+        flex-direction: row;
+    }
+
+    .game-player-sidebar {
+        border-right: 0;
+        border-bottom: 2px solid #222;
+    }
+
+    .game-player-list .leaderboard-row {
+        flex: 1;
+    }
+
+    .lobby-layout {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto auto minmax(0, 1fr) auto;
+    }
+
+    .lobby-hud,
+    .lobby-player-sidebar,
+    .lobby-main,
+    .lobby-empty-sidebar {
+        grid-column: 1;
+    }
+
+    .lobby-hud {
+        grid-row: 1;
+    }
+
+    .lobby-player-sidebar {
+        grid-row: 2;
+        flex-direction: row;
+        border-right: 0;
+        border-bottom: 2px solid #222;
+    }
+
+    .lobby-player-sidebar .leaderboard-row {
+        flex: 1;
+    }
+
+    .lobby-main {
+        grid-row: 3;
+    }
+
+    .lobby-empty-sidebar {
+        grid-row: 4;
+        display: none;
+    }
 }

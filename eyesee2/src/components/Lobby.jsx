@@ -1,30 +1,96 @@
-import { useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faCrown } from '@fortawesome/free-solid-svg-icons'
+import { faClock, faCrown } from '@fortawesome/free-solid-svg-icons'
 import socket from '../socket'
 
-export const Lobby = ({ playerName, roomCode, isHost, players }) => {
-    const [selectedTimer, setSelectedTimer] = useState(0)
-    const [selectedRounds, setSelectedRounds] = useState(15)
+export const Lobby = ({ playerName, roomCode, isHost, hostId, players, lobbySettings }) => {
+    const [selectedTimer, setSelectedTimer] = useState(lobbySettings.timer)
+    const [selectedRounds, setSelectedRounds] = useState(lobbySettings.roundCount)
+    const [selectedCooldown, setSelectedCooldown] = useState(lobbySettings.cooldownSeconds)
+    const leaderboardRef = useRef(null)
+    const playerPositions = useRef(new Map())
+
+    useEffect(() => {
+        setSelectedTimer(lobbySettings.timer)
+        setSelectedRounds(lobbySettings.roundCount)
+        setSelectedCooldown(lobbySettings.cooldownSeconds)
+    }, [lobbySettings])
+
+    const updateSettings = (settings) => {
+        socket.emit('updateLobbySettings', {
+            roomCode,
+            timer: settings.timer,
+            roundCount: settings.roundCount,
+            cooldownSeconds: settings.cooldownSeconds
+        })
+    }
+
+    const handleTimerChange = (timer) => {
+        setSelectedTimer(timer)
+        updateSettings({ timer, roundCount: selectedRounds, cooldownSeconds: selectedCooldown })
+    }
+
+    const handleRoundsChange = (roundCount) => {
+        setSelectedRounds(roundCount)
+        updateSettings({ timer: selectedTimer, roundCount, cooldownSeconds: selectedCooldown })
+    }
+
+    const handleCooldownChange = (cooldownSeconds) => {
+        setSelectedCooldown(cooldownSeconds)
+        updateSettings({ timer: selectedTimer, roundCount: selectedRounds, cooldownSeconds })
+    }
 
     const handleStartGame = () => {
 
         socket.emit('startGame', {
-            roomCode,
-            timer: selectedTimer,
-            roundCount: selectedRounds
+            roomCode
         })
     }
 
-    return (
-        <div className="lobby-page">
-            <div className="lobby-left">
-                <p className="lobby-logo">EyeSee2</p>
+    // Inactive players are a game-only status and are not shown in the lobby.
+    const sortedPlayers = players.filter(player => player.connected !== false).sort((firstPlayer, secondPlayer) => {
+        return secondPlayer.score - firstPlayer.score
+    })
+    const leaderboardState = sortedPlayers.map(player => `${player.id}:${player.score}:${player.connected}`).join('|')
 
-                <div className="lobby-round-timer">
-                    <span>Round: {selectedRounds} </span>
-                    <span>Timer: {selectedTimer === 0 ? 'No Limit' : selectedTimer} </span>
-                </div>
+    useLayoutEffect(() => {
+        const leaderboard = leaderboardRef.current
+        if (!leaderboard) return
+
+        const nextPositions = new Map()
+        leaderboard.querySelectorAll('[data-player-id]').forEach((row) => {
+            const playerId = row.dataset.playerId
+            const nextTop = row.getBoundingClientRect().top
+            const previousTop = playerPositions.current.get(playerId)
+
+            if (previousTop !== undefined && previousTop !== nextTop && row.animate) {
+                row.animate(
+                    [
+                        { transform: `translateY(${previousTop - nextTop}px)` },
+                        { transform: 'translateY(0)' }
+                    ],
+                    { duration: 240, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' }
+                )
+            }
+
+            nextPositions.set(playerId, nextTop)
+        })
+
+        playerPositions.current = nextPositions
+    }, [leaderboardState])
+
+    return (
+        <div className="lobby-page lobby-layout">
+            <header className="lobby-hud app-hud">
+                <p className="lobby-logo">EyeSee2</p>
+                <span>Rounds: {selectedRounds}</span>
+                <span>
+                    <FontAwesomeIcon className="timer-icon" icon={faClock} />
+                    {selectedTimer === 0 ? 'No Limit' : selectedTimer}
+                </span>
+            </header>
+
+            <main className="lobby-main">
 
                 <div className="lobby-settings-box">
                     <div className="lobby-room-code-row">
@@ -45,7 +111,7 @@ export const Lobby = ({ playerName, roomCode, isHost, players }) => {
                             <select
                                 className="lobby-select"
                                 value={selectedRounds}
-                                onChange={(e) => setSelectedRounds(Number(e.target.value))}
+                                onChange={(e) => handleRoundsChange(Number(e.target.value))}
                             >
                                 <option value={10}>10 rounds</option>
                                 <option value={11}>11 rounds</option>
@@ -70,7 +136,7 @@ export const Lobby = ({ playerName, roomCode, isHost, players }) => {
                             <select
                                 className="lobby-select"
                                 value={selectedTimer}
-                                onChange={(e) => setSelectedTimer(Number(e.target.value))}
+                                onChange={(e) => handleTimerChange(Number(e.target.value))}
                             >
                                 <option value={0}>No Time Limit</option>
                                 <option value={5}>5 sec</option>
@@ -85,6 +151,27 @@ export const Lobby = ({ playerName, roomCode, isHost, players }) => {
                             </span>
                         )}
                     </div>
+                    <div className="lobby-setting-row">
+                        <span>Cooldown</span>
+                        {isHost ? (
+                            <select
+                                className="lobby-select"
+                                value={selectedCooldown}
+                                onChange={(e) => handleCooldownChange(Number(e.target.value))}
+                            >
+                                <option value={3}>3 sec</option>
+                                <option value={4}>4 sec</option>
+                                <option value={5}>5 sec</option>
+                                <option value={6}>6 sec</option>
+                                <option value={7}>7 sec</option>
+                                <option value={8}>8 sec</option>
+                                <option value={9}>9 sec</option>
+                                <option value={10}>10 sec</option>
+                            </select>
+                        ) : (
+                            <span>{selectedCooldown} seconds</span>
+                        )}
+                    </div>
                 </div>
 
                 {isHost ? (
@@ -96,55 +183,59 @@ export const Lobby = ({ playerName, roomCode, isHost, players }) => {
                         Waiting for host to start...
                     </div>
                 )}
+            </main>
 
-
-            </div>
-
-            <div className="lobby-right">
-                {players[0] ? (
-                    <div className="lobby-player-box">
-                        <div className="lobby-player-avatar">
-                            {players[0].name[0].toUpperCase()}
-                        </div>
-                        <div className="lobby-player-info lobby-host-info">
-                            <div className="lobby-host-name-row">
-                                <p className="lobby-player-name">{players[0].name}</p>
-                                <span className="lobby-player-badge lobby-host-badge" title="Host">
-                                    <FontAwesomeIcon icon={faCrown} aria-label="Host" />
-                                </span>
+            <aside ref={leaderboardRef} className="lobby-player-sidebar">
+                {sortedPlayers.length > 0 ? (
+                    sortedPlayers.map((player, index) => (
+                        <div
+                            key={player.id}
+                            data-player-id={player.id}
+                            className="leaderboard-row"
+                        >
+                            <span className="player-rank">#{index + 1}</span>
+                            <div className={`lobby-player-box ${player.connected === false ? 'player-inactive' : ''}`}>
+                                <div className={`lobby-player-avatar ${index === 1 ? 'p2' : ''}`}>
+                                    {player.name[0].toUpperCase()}
+                                </div>
+                                <div className={`lobby-player-info ${player.id === hostId ? 'lobby-host-info' : ''}`}>
+                                    {player.id === hostId ? (
+                                        <div className="lobby-host-name-row">
+                                            <p className="lobby-player-name">{player.name}</p>
+                                            <span className="lobby-player-badge lobby-host-badge" title="Host">
+                                                <FontAwesomeIcon icon={faCrown} aria-label="Host" />
+                                            </span>
+                                        </div>
+                                    ) : (
+                                        <p className="lobby-player-name">{player.name}</p>
+                                    )}
+                                    {player.connected === false && <span className="player-status-tag">Left</span>}
+                                </div>
                             </div>
                         </div>
-                    </div>
+                    ))
                 ) : (
-                    <div className="lobby-player-box">
-                        <div className="lobby-player-avatar">
-                            {playerName ? playerName[0].toUpperCase() : 'H'}
-                        </div>
-                        <div className="lobby-player-info lobby-host-info">
-                            <div className="lobby-host-name-row">
-                                <p className="lobby-player-name">{playerName || 'Host'}</p>
-                                <span className="lobby-player-badge lobby-host-badge" title="Host">
-                                    <FontAwesomeIcon icon={faCrown} aria-label="Host" />
-                                </span>
+                    <div className="leaderboard-row">
+                        <span className="player-rank">#1</span>
+                        <div className="lobby-player-box">
+                            <div className="lobby-player-avatar">
+                                {playerName ? playerName[0].toUpperCase() : 'H'}
                             </div>
-                            <p className="lobby-player-sub">room host</p>
+                            <div className="lobby-player-info lobby-host-info">
+                                <div className="lobby-host-name-row">
+                                    <p className="lobby-player-name">{playerName || 'Host'}</p>
+                                    <span className="lobby-player-badge lobby-host-badge" title="Host">
+                                        <FontAwesomeIcon icon={faCrown} aria-label="Host" />
+                                    </span>
+                                </div>
+                                <p className="lobby-player-sub">room host</p>
+                            </div>
                         </div>
                     </div>
                 )}
+            </aside>
 
-                {players.length > 1 && (
-                    <div className="lobby-player-box">
-                        <div className="lobby-player-avatar p2">
-                            {players[1].name[0].toUpperCase()}
-                        </div>
-                        <div className="lobby-player-info">
-                            <p className="lobby-player-name">{players[1].name}</p>
-
-                        </div>
-
-                    </div>
-                )}
-            </div>
+            <aside className="lobby-empty-sidebar" aria-label="Future chat panel" />
         </div>
     )
 }
