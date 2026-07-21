@@ -25,6 +25,13 @@ const PORT = 3001
 const rooms = {}
 const ROUND_RESULT_DELAY = 800
 
+const clearRoundCooldowns = (room) => {
+    room.players.forEach(player => {
+        delete player.cooldownUntil
+        delete player.correctUntil
+    })
+}
+
 // game data
 const { createRounds } = require('./gameData')
 
@@ -172,10 +179,8 @@ io.on('connection', (socket) => {
         const roomCode = data.roomCode
         const room = rooms[roomCode]
         if (!room || room.hostId !== socket.id) return
-        room.players.forEach(p => {
-            p.score = 0
-            delete p.cooldownUntil
-        })
+        room.players.forEach(p => p.score = 0)
+        clearRoundCooldowns(room)
 
         const timerDuration = room.settings.timer
         room.gameStarted = true
@@ -227,6 +232,8 @@ io.on('connection', (socket) => {
                 }
 
                 room.timer = room.timerDuration
+                clearRoundCooldowns(room)
+                io.to(roomCode).emit('cooldownUpdated', { players: room.players })
 
                 io.to(roomCode).emit('newRound', {
                     currentRound: room.currentRound,
@@ -286,6 +293,7 @@ io.on('connection', (socket) => {
         clearInterval(room.interval)
 
         player.score += 1
+        player.correctUntil = Date.now() + ROUND_RESULT_DELAY
 
         io.to(roomCode).emit('scoreUpdated', { players: room.players })
         io.to(roomCode).emit('roundWon', {
@@ -313,6 +321,8 @@ io.on('connection', (socket) => {
 
             room.timer = room.timerDuration
             room.roundLocked = false
+            clearRoundCooldowns(room)
+            io.to(roomCode).emit('cooldownUpdated', { players: room.players })
             io.to(roomCode).emit('matchDone', {
                 currentRound: room.currentRound,
                 timer: room.timer
@@ -342,6 +352,8 @@ io.on('connection', (socket) => {
                 }
 
                 room.timer = room.timerDuration
+                clearRoundCooldowns(room)
+                io.to(roomCode).emit('cooldownUpdated', { players: room.players })
                 io.to(roomCode).emit('newRound', {
                     currentRound: room.currentRound,
                     timer: room.timer
@@ -361,10 +373,8 @@ io.on('connection', (socket) => {
         rooms[roomCode].currentRound = 0
         rooms[roomCode].roundLocked = false
         rooms[roomCode].timer = rooms[roomCode].timerDuration
-        rooms[roomCode].players.forEach(p => {
-            p.score = 0
-            delete p.cooldownUntil
-        })
+        rooms[roomCode].players.forEach(p => p.score = 0)
+        clearRoundCooldowns(rooms[roomCode])
 
         // restart game for both players
         io.to(roomCode).emit('gameRestarted', {
@@ -397,6 +407,8 @@ io.on('connection', (socket) => {
                 }
 
                 rooms[roomCode].timer = rooms[roomCode].timerDuration
+                clearRoundCooldowns(rooms[roomCode])
+                io.to(roomCode).emit('cooldownUpdated', { players: rooms[roomCode].players })
                 io.to(roomCode).emit('newRound', {
                     currentRound: rooms[roomCode].currentRound
                 })

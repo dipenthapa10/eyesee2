@@ -8,18 +8,22 @@ import socket from "../socket";
 export const GameScreen = ({ setScreen, rounds, playerName, isHost, hostId, initialPlayers, initialTimer, initialTimerDuration }) => {
     // const defaultTimer = 10;
     const [score, setScore] = useState(0)
-    const [message, setMessage] = useState("")
     const [roundIndex, setRoundIndex] = useState(0)
     const [gameOver, setGameOver] = useState(false)
     const [timer, setTimer] = useState(initialTimer)
     const [timerDuration, setTimerDuration] = useState(initialTimerDuration)
     const [roundLocked, setRoundLocked] = useState(false)
+    const [displayedRoundIndex, setDisplayedRoundIndex] = useState(0)
+    const [cardStage, setCardStage] = useState("idle")
     const [gameStart, setGameStart] = useState(true)
     const [players, setPlayers] = useState(initialPlayers)
     const [winner, setWinner] = useState("")
     const [now, setNow] = useState(Date.now())
     const leaderboardRef = useRef(null)
     const playerPositions = useRef(new Map())
+    const displayedRoundRef = useRef(0)
+    const transitioningRoundRef = useRef(null)
+    const cardTransitionTimers = useRef([])
 
 
 
@@ -27,6 +31,40 @@ export const GameScreen = ({ setScreen, rounds, playerName, isHost, hostId, init
 
     useEffect(() => {
         const countdownInterval = setInterval(() => setNow(Date.now()), 250)
+        const clearCardTransitionTimers = () => {
+            cardTransitionTimers.current.forEach(clearTimeout)
+            cardTransitionTimers.current = []
+        }
+        const playCardTransition = (nextRoundIndex) => {
+            setRoundIndex(nextRoundIndex)
+
+            if (displayedRoundRef.current === nextRoundIndex) {
+                clearCardTransitionTimers()
+                setCardStage("deal")
+                cardTransitionTimers.current.push(setTimeout(() => setCardStage("idle"), 480))
+                setRoundLocked(false)
+                return
+            }
+
+            if (transitioningRoundRef.current === nextRoundIndex) return
+
+            clearCardTransitionTimers()
+            transitioningRoundRef.current = nextRoundIndex
+            setRoundLocked(true)
+            setCardStage("collect")
+
+            cardTransitionTimers.current.push(setTimeout(() => {
+                displayedRoundRef.current = nextRoundIndex
+                setDisplayedRoundIndex(nextRoundIndex)
+                setCardStage("deal")
+            }, 280))
+
+            cardTransitionTimers.current.push(setTimeout(() => {
+                transitioningRoundRef.current = null
+                setCardStage("idle")
+                setRoundLocked(false)
+            }, 760))
+        }
 
 
         socket.on('timerTick', (data) => {
@@ -35,14 +73,11 @@ export const GameScreen = ({ setScreen, rounds, playerName, isHost, hostId, init
 
         // listen for new round from server
         socket.on('newRound', (data) => {
-            setRoundIndex(data.currentRound)
-            setMessage("")
-            setRoundLocked(false)
+            playCardTransition(data.currentRound)
         })
 
         socket.on('roundWon', (data) => {
             setPlayers(data.players)
-            setMessage(`${data.winner} found the match!`)
             setRoundLocked(true)
         })
 
@@ -55,9 +90,13 @@ export const GameScreen = ({ setScreen, rounds, playerName, isHost, hostId, init
         })
 
         socket.on('gameRestarted', (data) => {
+            clearCardTransitionTimers()
             setRoundIndex(0)
+            displayedRoundRef.current = 0
+            setDisplayedRoundIndex(0)
+            setCardStage("deal")
+            cardTransitionTimers.current.push(setTimeout(() => setCardStage("idle"), 480))
             setScore(0)
-            setMessage("")
             setGameOver(false)
             setTimer(data.timer)
             setTimerDuration(data.timerDuration)
@@ -77,9 +116,7 @@ export const GameScreen = ({ setScreen, rounds, playerName, isHost, hostId, init
             setPlayers(data.players)
         })
         socket.on('matchDone', (data) => {
-            setRoundIndex(data.currentRound)
-            setMessage("")
-            setRoundLocked(false)
+            playCardTransition(data.currentRound)
         })
         return () => {
             socket.off('timerTick')
@@ -92,13 +129,14 @@ export const GameScreen = ({ setScreen, rounds, playerName, isHost, hostId, init
             socket.off('cooldownUpdated')
             socket.off('matchDone')
             clearInterval(countdownInterval)
+            clearCardTransitionTimers()
 
         }
 
 
     }, [])
 
-    const currentRound = rounds[roundIndex]
+    const currentRound = rounds[displayedRoundIndex]
     const sortedPlayers = [...players].sort((firstPlayer, secondPlayer) => {
         const connectionOrder = Number(firstPlayer.connected === false) - Number(secondPlayer.connected === false)
         if (connectionOrder !== 0) return connectionOrder
@@ -142,19 +180,16 @@ export const GameScreen = ({ setScreen, rounds, playerName, isHost, hostId, init
         if (roundLocked || cooldownRemaining > 0) return
 
         if (symbol === currentRound.match) {
-            setMessage("Correct!")
             setScore(score + 1)
             setRoundLocked(true)
             socket.emit('cardMatch', { playerName, symbol, roundIndex })
         } else {
-            setMessage("Wrong! Please wait a moment.")
             socket.emit('wrongAnswer', { symbol, roundIndex })
         }
     }
 
     const restartGame = () => {
         setScore(0)
-        setMessage("")
         setRoundIndex(0)
         setGameOver(false)
         socket.emit('restartGame')
@@ -162,7 +197,6 @@ export const GameScreen = ({ setScreen, rounds, playerName, isHost, hostId, init
     const lobby = () => {
         setRoundIndex(0)
         setScore(0)
-        setMessage("")
         setGameOver(false)
         setWinner("")
         setPlayers([])
@@ -214,7 +248,7 @@ export const GameScreen = ({ setScreen, rounds, playerName, isHost, hostId, init
                 sortedPlayers.map((p, i) => (
                     <div key={p.id} data-player-id={p.id} className="leaderboard-row">
                         <span className="player-rank">#{i + 1}</span>
-                        <div className={`lobby-player-box ${p.connected === false ? 'player-inactive' : ''} ${p.cooldownUntil > now ? 'player-cooldown' : ''}`}>
+                        <div className={`lobby-player-box ${p.connected === false ? 'player-inactive' : ''} ${p.cooldownUntil > now ? 'player-cooldown' : ''} ${p.correctUntil > now ? 'player-correct' : ''}`}>
                             <div className={`lobby-player-avatar ${i === 1 ? 'p2' : ''}`}>
                                 {p.name[0].toUpperCase()}
                             </div>
@@ -266,7 +300,7 @@ export const GameScreen = ({ setScreen, rounds, playerName, isHost, hostId, init
         <div className="game-page">
             <header className="game-hud app-hud">
                 <p className="lobby-logo">EyeSee2</p>
-                <span>Round: {roundIndex + 1} / {rounds.length}</span>
+                <span>Round: {displayedRoundIndex + 1} / {rounds.length}</span>
                 <span>
                     <FontAwesomeIcon className="timer-icon" icon={faClock} />
                     {timerDuration === 0 ? 'No Limit' : timer}
@@ -276,15 +310,9 @@ export const GameScreen = ({ setScreen, rounds, playerName, isHost, hostId, init
                 {playerList}
             </aside>
             <main className="game-main">
-                {message && !gameOver && (
-                    <div className="game-round-message">
-                        <p>{message}</p>
-                    </div>
-                )}
-
                 {!gameOver && (
-                    <div className="game-cards-area">
-                        <div className="card">
+                    <div className={`game-cards-area card-stage-${cardStage}`}>
+                        <div className="card" key={`center-${displayedRoundIndex}`}>
                             {centerCard.map((symbol, index) => (
                                 <span
                                     className="symbol"
@@ -297,7 +325,7 @@ export const GameScreen = ({ setScreen, rounds, playerName, isHost, hostId, init
                             ))}
                         </div>
 
-                        <div className="card your-card">
+                        <div className="card your-card" key={`yours-${displayedRoundIndex}`}>
                             {yourCard.map((symbol, index) => (
                                 <span
                                     className="symbol"
