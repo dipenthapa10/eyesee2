@@ -18,6 +18,7 @@ export const GameScreen = ({ setScreen, rounds, playerName, isHost, hostId, init
     const [gameStart, setGameStart] = useState(true)
     const [players, setPlayers] = useState(initialPlayers)
     const [winner, setWinner] = useState("")
+    const [activities, setActivities] = useState([])
     const [now, setNow] = useState(Date.now())
     const leaderboardRef = useRef(null)
     const playerPositions = useRef(new Map())
@@ -102,6 +103,7 @@ export const GameScreen = ({ setScreen, rounds, playerName, isHost, hostId, init
             setTimerDuration(data.timerDuration)
             setWinner("")
             setPlayers([])
+            setActivities([])
             setRoundLocked(false)
         })
 
@@ -118,6 +120,9 @@ export const GameScreen = ({ setScreen, rounds, playerName, isHost, hostId, init
         socket.on('matchDone', (data) => {
             playCardTransition(data.currentRound)
         })
+        socket.on('activityUpdate', (activity) => {
+            setActivities(currentActivities => [...currentActivities, activity].slice(-8))
+        })
         return () => {
             socket.off('timerTick')
             socket.off('newRound')
@@ -128,6 +133,7 @@ export const GameScreen = ({ setScreen, rounds, playerName, isHost, hostId, init
             socket.off('playerDisconnected')
             socket.off('cooldownUpdated')
             socket.off('matchDone')
+            socket.off('activityUpdate')
             clearInterval(countdownInterval)
             clearCardTransitionTimers()
 
@@ -353,7 +359,25 @@ export const GameScreen = ({ setScreen, rounds, playerName, isHost, hostId, init
                 )}
             </main>
 
-            <aside className="game-sidebar" aria-label="Future chat panel" />
+            <aside className="game-sidebar" aria-label="Game activity">
+                <section className="game-activity-panel">
+                    <div className="game-activity-list" role="log" aria-live="polite">
+                        {activities.length > 0 ? (
+                            activities.map((activity) => (
+                                <p
+                                    className={`game-activity-entry activity-${activity.type}`}
+                                    key={`${activity.id}-${activity.timestamp}`}
+                                >
+                                    <strong>{activity.name}</strong>{' '}
+                                    {activity.type === 'correct' ? 'found it!' : 'oopsies wrong.'}
+                                </p>
+                            ))
+                        ) : (
+                            <p className="game-activity-empty">Eye Seeeeeee twooooooooooo!</p>
+                        )}
+                    </div>
+                </section>
+            </aside>
         </div>
     )
 }

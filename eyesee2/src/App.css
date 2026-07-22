@@ -547,12 +547,59 @@ input::placeholder {
     grid-column: 3;
     grid-row: 2;
     min-height: 0;
-    padding: 14px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
+    padding: 0;
+    display: grid;
+    grid-template-rows: 1fr minmax(0, 50%);
     background: #757575;
     border-left: 2px solid #222;
+}
+
+.game-activity-panel {
+    min-height: 0;
+    margin: 0 4px 4px;
+    display: flex;
+    flex-direction: column;
+    grid-row: 2;
+    overflow: hidden;
+    background: #fff;
+    border: 2px solid #222;
+    border-radius: 7px;
+}
+
+.game-activity-list {
+    min-height: 0;
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    justify-content: flex-end;
+    overflow: hidden;
+    padding: 0;
+}
+
+.game-activity-entry,
+.game-activity-empty {
+    margin: 0;
+    padding: 9px 12px;
+    font-size: 12px;
+    font-weight: bold;
+    line-height: 1.35;
+    flex-shrink: 0;
+}
+
+.activity-correct {
+    background: #dcffc8;
+    color: #37b820;
+}
+
+.activity-wrong {
+    background: #ffe1e1;
+    color: #d23535;
+}
+
+.game-activity-empty {
+    padding-top: 18px;
+    color: #666;
+    text-align: center;
 }
 
 .game-player-sidebar {

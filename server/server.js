@@ -261,6 +261,12 @@ io.on('connection', (socket) => {
         const cooldownDuration = room.settings.cooldownSeconds * 1000
         player.cooldownUntil = Date.now() + cooldownDuration
         io.to(roomCode).emit('cooldownUpdated', { players: room.players })
+        io.to(roomCode).emit('activityUpdate', {
+            id: player.id,
+            name: player.name,
+            type: 'wrong',
+            timestamp: Date.now()
+        })
 
         setTimeout(() => {
             if (!rooms[roomCode] || player.cooldownUntil > Date.now()) return
@@ -299,6 +305,12 @@ io.on('connection', (socket) => {
         io.to(roomCode).emit('roundWon', {
             winner: player?.name || 'A player',
             players: room.players
+        })
+        io.to(roomCode).emit('activityUpdate', {
+            id: player.id,
+            name: player.name,
+            type: 'correct',
+            timestamp: Date.now()
         })
 
         setTimeout(() => {
