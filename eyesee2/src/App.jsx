@@ -15,7 +15,8 @@ function App() {
   const [isHost, setIsHost] = useState(false)
   const [hostId, setHostId] = useState("")
   const [players, setPlayers] = useState([])
-  const [lobbySettings, setLobbySettings] = useState({ timer: 0, roundCount: 15, cooldownSeconds: 5 })
+  const [lobbySettings, setLobbySettings] = useState({ timer: 0, roundCount: 15, cooldownSeconds: 5, maxPlayers: 2 })
+  const [activities, setActivities] = useState([])
 
   useEffect(() => {
     socket.on("connect", () => {
@@ -33,6 +34,7 @@ function App() {
       setPlayers(data.players)
       setHostId(data.hostId)
       setLobbySettings(data.settings)
+      setActivities([])
       setScreen("lobby")
       setIsHost(true)
     })
@@ -46,12 +48,10 @@ function App() {
     })
 
     socket.on("gameStarted", (data) => {
-      console.log("app.jsx received gameStarted!", data)
-      console.log("rounds length:", data.rounds.length)
-
       setRounds(data.rounds)
       setTimer(data.timer)
       setTimerDuration(data.timerDuration)
+      setActivities([])
       setScreen("game")
     })
 
@@ -77,6 +77,14 @@ function App() {
       setLobbySettings(data.settings)
     })
 
+    socket.on("joinError", (data) => {
+      alert(data.message)
+    })
+
+    socket.on("activityUpdate", (activity) => {
+      setActivities(currentActivities => [...currentActivities, activity].slice(-8))
+    })
+
     return () => {
       socket.off("roomCreated")
       socket.off("playerJoined")
@@ -85,6 +93,8 @@ function App() {
       socket.off("hostDisconnected")
       socket.off("playerDisconnected")
       socket.off("lobbySettingsUpdated")
+      socket.off("joinError")
+      socket.off("activityUpdate")
     }
   }, [])
 
@@ -92,7 +102,6 @@ function App() {
     <div>
       {screen === "home" && (
         <HomeScreen
-          setScreen={setScreen}
           setPlayerName={setPlayerName}
           playerName={playerName}
           setRoomCode={setRoomCode}
@@ -101,13 +110,13 @@ function App() {
 
       {screen === "lobby" && (
         <Lobby
-          setScreen={setScreen}
           playerName={playerName}
           roomCode={roomCode}
           isHost={isHost}
           hostId={hostId}
           players={players}
           lobbySettings={lobbySettings}
+          activities={activities}
         />
       )}
 
@@ -115,13 +124,13 @@ function App() {
         <GameScreen
           setScreen={setScreen}
           rounds={rounds}
-          roomCode={roomCode}
           isHost={isHost}
           hostId={hostId}
           playerName={playerName}
           initialPlayers={players}
           initialTimer={timer}
           initialTimerDuration={timerDuration}
+          activities={activities}
         />
       )}
     </div>

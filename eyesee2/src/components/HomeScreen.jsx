@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import socket from '../socket'
 
-export const HomeScreen = ({ setScreen, setPlayerName, playerName, setRoomCode }) => {
+export const HomeScreen = ({ setPlayerName, playerName, setRoomCode }) => {
     const [roomCodeLocal, setRoomCodeLocal] = useState("")
 
     const handleCreateRoom = () => {
@@ -24,7 +24,6 @@ export const HomeScreen = ({ setScreen, setPlayerName, playerName, setRoomCode }
         }
         setRoomCode(roomCodeLocal)
         socket.emit('joinRoom', { playerName, roomCode: roomCodeLocal })
-        // setScreen("lobby")
 
     }
 

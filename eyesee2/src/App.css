@@ -198,6 +198,43 @@ input::placeholder {
     font-weight: bold;
 }
 
+.lobby-room-code-value-row {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.lobby-copy-icon {
+    padding: 2px;
+    border: 0;
+    background: transparent;
+    color: #111;
+    cursor: pointer;
+}
+
+.lobby-copy-icon:hover:not(:disabled) {
+    transform: scale(1.12);
+}
+
+.lobby-copy-icon:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.lobby-copied-tooltip {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    z-index: 2;
+    padding: 4px 7px;
+    border-radius: 5px;
+    background: #222;
+    color: #fff;
+    font-size: 11px;
+    letter-spacing: 0;
+}
+
 .lobby-btn-start {
     width: 100%;
     padding: 13px;
@@ -337,16 +374,6 @@ input::placeholder {
 
 
 
-/* .lobby-player-badge {
-    font-size: 10px;
-    color: #111;
-    background: #f0f0f0;
-    padding: 3px 10px;
-    border-radius: 20px;
-    font-family: 'Happy Monkey', cursive;
-    border: 1px solid #ddd;
-} */
-
 .game-cards-area {
     flex: 1;
     min-height: 0;
@@ -354,8 +381,10 @@ input::placeholder {
     flex-direction: row;
     align-items: center;
     justify-content: center;
-    gap: clamp(16px, 3vw, 36px);
+    gap: 40px;
     width: 100%;
+    flex-wrap: wrap;
+    perspective: 1400px;
 }
 
 .game-over-box {
@@ -408,16 +437,6 @@ input::placeholder {
 
 .symbol:active {
     transform: translate(-50%, -50%) scale(1.05);
-}
-
-.game-cards-area {
-    flex: 1;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 40px;
-    flex-wrap: wrap;
-    perspective: 1400px;
 }
 
 .card-stage-collect .card {
@@ -513,7 +532,35 @@ input::placeholder {
     display: flex;
     flex-direction: column;
     gap: clamp(10px, 2vh, 18px);
-    background: radial-gradient(circle at 50% 45%, #ffffff 0%, #f5f5f5 72%);
+    background: radial-gradient(circle at 50% 45%, #ffffff 0%, #f0f1f2 78%);
+}
+
+.round-countdown {
+    position: absolute;
+    inset: 0;
+    z-index: 5;
+    display: grid;
+    place-items: center;
+    background: rgba(255, 255, 255, 0.92);
+    color: #111;
+}
+
+.round-countdown span {
+    display: grid;
+    width: clamp(100px, 14vw, 170px);
+    aspect-ratio: 1;
+    place-items: center;
+    border: 4px solid #222;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.16);
+    font-size: clamp(56px, 8vw, 100px);
+    line-height: 1;
+}
+
+.cards-countdown .card {
+    opacity: 0;
+    transform: scale(0.86);
 }
 
 .game-hud {
@@ -548,18 +595,17 @@ input::placeholder {
     grid-row: 2;
     min-height: 0;
     padding: 0;
-    display: grid;
-    grid-template-rows: 1fr minmax(0, 50%);
+    display: flex;
     background: #757575;
     border-left: 2px solid #222;
 }
 
 .game-activity-panel {
     min-height: 0;
-    margin: 0 4px 4px;
+    margin: 4px;
     display: flex;
+    flex: 1;
     flex-direction: column;
-    grid-row: 2;
     overflow: hidden;
     background: #fff;
     border: 2px solid #222;
@@ -594,6 +640,11 @@ input::placeholder {
 .activity-wrong {
     background: #ffe1e1;
     color: #d23535;
+}
+
+.activity-notice {
+    background: #e6eef8;
+    color: #2d63a5;
 }
 
 .game-activity-empty {
@@ -701,6 +752,8 @@ input::placeholder {
 
 .lobby-empty-sidebar {
     grid-column: 3;
+    padding: 0;
+    display: flex;
     border-left: 2px solid #222;
 }
 

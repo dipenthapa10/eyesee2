@@ -1,43 +1,47 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faClock, faCrown } from '@fortawesome/free-solid-svg-icons'
+import { faClock, faCopy, faCrown } from '@fortawesome/free-solid-svg-icons'
 import socket from '../socket'
+import { ActivityLog } from './ActivityLog'
 
-export const Lobby = ({ playerName, roomCode, isHost, hostId, players, lobbySettings }) => {
-    const [selectedTimer, setSelectedTimer] = useState(lobbySettings.timer)
-    const [selectedRounds, setSelectedRounds] = useState(lobbySettings.roundCount)
-    const [selectedCooldown, setSelectedCooldown] = useState(lobbySettings.cooldownSeconds)
+export const Lobby = ({ playerName, roomCode, isHost, hostId, players, lobbySettings, activities }) => {
+    const {
+        timer: selectedTimer,
+        roundCount: selectedRounds,
+        cooldownSeconds: selectedCooldown,
+        maxPlayers: selectedMaxPlayers
+    } = lobbySettings
     const leaderboardRef = useRef(null)
     const playerPositions = useRef(new Map())
+    const copyTimer = useRef(null)
+    const [copied, setCopied] = useState(false)
 
-    useEffect(() => {
-        setSelectedTimer(lobbySettings.timer)
-        setSelectedRounds(lobbySettings.roundCount)
-        setSelectedCooldown(lobbySettings.cooldownSeconds)
-    }, [lobbySettings])
+    useEffect(() => () => clearTimeout(copyTimer.current), [])
 
     const updateSettings = (settings) => {
         socket.emit('updateLobbySettings', {
             roomCode,
             timer: settings.timer,
             roundCount: settings.roundCount,
-            cooldownSeconds: settings.cooldownSeconds
+            cooldownSeconds: settings.cooldownSeconds,
+            maxPlayers: settings.maxPlayers
         })
     }
 
     const handleTimerChange = (timer) => {
-        setSelectedTimer(timer)
-        updateSettings({ timer, roundCount: selectedRounds, cooldownSeconds: selectedCooldown })
+        updateSettings({ timer, roundCount: selectedRounds, cooldownSeconds: selectedCooldown, maxPlayers: selectedMaxPlayers })
     }
 
     const handleRoundsChange = (roundCount) => {
-        setSelectedRounds(roundCount)
-        updateSettings({ timer: selectedTimer, roundCount, cooldownSeconds: selectedCooldown })
+        updateSettings({ timer: selectedTimer, roundCount, cooldownSeconds: selectedCooldown, maxPlayers: selectedMaxPlayers })
     }
 
     const handleCooldownChange = (cooldownSeconds) => {
-        setSelectedCooldown(cooldownSeconds)
-        updateSettings({ timer: selectedTimer, roundCount: selectedRounds, cooldownSeconds })
+        updateSettings({ timer: selectedTimer, roundCount: selectedRounds, cooldownSeconds, maxPlayers: selectedMaxPlayers })
+    }
+
+    const handleMaxPlayersChange = (maxPlayers) => {
+        updateSettings({ timer: selectedTimer, roundCount: selectedRounds, cooldownSeconds: selectedCooldown, maxPlayers })
     }
 
     const handleStartGame = () => {
@@ -47,7 +51,19 @@ export const Lobby = ({ playerName, roomCode, isHost, hostId, players, lobbySett
         })
     }
 
-    // Inactive players are a game-only status and are not shown in the lobby.
+    const handleCopyRoomCode = async () => {
+        if (!roomCode) return
+
+        try {
+            await navigator.clipboard.writeText(roomCode)
+            setCopied(true)
+            clearTimeout(copyTimer.current)
+            copyTimer.current = setTimeout(() => setCopied(false), 1600)
+        } catch {
+            setCopied(false)
+        }
+    }
+
     const sortedPlayers = players.filter(player => player.connected !== false).sort((firstPlayer, secondPlayer) => {
         return secondPlayer.score - firstPlayer.score
     })
@@ -95,15 +111,35 @@ export const Lobby = ({ playerName, roomCode, isHost, hostId, players, lobbySett
                 <div className="lobby-settings-box">
                     <div className="lobby-room-code-row">
                         <span className="lobby-room-code-label">Room Code</span>
-                        <span className="lobby-room-code-val">{roomCode || '------'}</span>
+                        <div className="lobby-room-code-value-row">
+                            <span className="lobby-room-code-val">{roomCode || '------'}</span>
+                            <button
+                                className="lobby-copy-icon"
+                                onClick={handleCopyRoomCode}
+                                disabled={!roomCode}
+                                title={copied ? 'Copied!' : 'Copy room code'}
+                                aria-label="Copy room code"
+                            >
+                                <FontAwesomeIcon icon={faCopy} />
+                            </button>
+                            {copied && <span className="lobby-copied-tooltip" role="status">Copied!</span>}
+                        </div>
                     </div>
                     <div className="lobby-setting-row">
                         <span>Players</span>
-
-                    </div>
-                    <div className="lobby-setting-row">
-                        <span>Characters</span>
-
+                        {isHost ? (
+                            <select
+                                className="lobby-select"
+                                value={selectedMaxPlayers}
+                                onChange={(e) => handleMaxPlayersChange(Number(e.target.value))}
+                            >
+                                {[2, 3, 4, 5, 6, 7, 8, 9, 10].map(maxPlayers => (
+                                    <option key={maxPlayers} value={maxPlayers}>{maxPlayers}</option>
+                                ))}
+                            </select>
+                        ) : (
+                            <span>{selectedMaxPlayers}</span>
+                        )}
                     </div>
                     <div className="lobby-setting-row">
                         <span>Rounds</span>
@@ -235,7 +271,9 @@ export const Lobby = ({ playerName, roomCode, isHost, hostId, players, lobbySett
                 )}
             </aside>
 
-            <aside className="lobby-empty-sidebar" aria-label="Future chat panel" />
+            <aside className="lobby-empty-sidebar" aria-label="Activity log">
+                <ActivityLog activities={activities} persistentMessage="Waiting for players..." />
+            </aside>
         </div>
     )
 }

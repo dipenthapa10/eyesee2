@@ -62,7 +62,7 @@ io.on('connection', (socket) => {
             }],
             gameStarted: false,
             currentRound: 0,
-            settings: { timer: 0, roundCount: 15, cooldownSeconds: 5 },
+            settings: { timer: 0, roundCount: 15, cooldownSeconds: 5, maxPlayers: 2 },
             deck: []
         };
 
@@ -87,11 +87,17 @@ io.on('connection', (socket) => {
         console.log("room exists?", !!rooms[data.roomCode])
 
         if (rooms[data.roomCode]) {
-            rooms[data.roomCode].players.push({
+            if (rooms[data.roomCode].players.length >= rooms[data.roomCode].settings.maxPlayers) {
+                socket.emit("joinError", { message: "This room is full." })
+                return
+            }
+
+            const player = {
                 id: socket.id,
                 name: data.playerName,
                 score: 0
-            })
+            }
+            rooms[data.roomCode].players.push(player)
 
             socket.join(data.roomCode)
             console.log(`new player has joined the room ${data.roomCode}`)
@@ -101,6 +107,13 @@ io.on('connection', (socket) => {
                 hostId: rooms[data.roomCode].hostId,
                 roomCode: data.roomCode,
                 settings: rooms[data.roomCode].settings
+            })
+            io.to(data.roomCode).emit('activityUpdate', {
+                id: player.id,
+                name: player.name,
+                type: 'notice',
+                message: 'joined the room.',
+                timestamp: Date.now()
             })
         }
         else {
@@ -133,6 +146,13 @@ io.on('connection', (socket) => {
                 players: room.players,
                 playerId: socket.id
             })
+            io.to(roomCode).emit('activityUpdate', {
+                id: player.id,
+                name: player.name,
+                type: 'notice',
+                message: 'left the room.',
+                timestamp: Date.now()
+            })
             return
         }
 
@@ -140,6 +160,7 @@ io.on('connection', (socket) => {
         // returning the remaining players to the lobby.
         clearInterval(room.interval)
         room.gameStarted = false
+        const departingHost = room.players.find(player => player.id === socket.id)
         room.players = room.players.filter(
             player => player.id !== socket.id && player.connected !== false
         )
@@ -150,12 +171,20 @@ io.on('connection', (socket) => {
         }
 
         // Promote the next connected player so the room can be started again.
-        room.hostId = room.players[0].id
+        const nextHost = room.players[0]
+        room.hostId = nextHost.id
 
         io.to(roomCode).emit('hostDisconnected', {
             roomCode,
             players: room.players,
             hostId: room.hostId
+        })
+        io.to(roomCode).emit('activityUpdate', {
+            id: nextHost.id,
+            name: nextHost.name,
+            type: 'notice',
+            message: `${departingHost?.name || 'The host'} left. You are now the host.`,
+            timestamp: Date.now()
         })
     })
 
@@ -166,12 +195,15 @@ io.on('connection', (socket) => {
         const timer = Number(data.timer)
         const roundCount = Number(data.roundCount)
         const cooldownSeconds = Number(data.cooldownSeconds)
+        const maxPlayers = Number(data.maxPlayers)
 
         if (![0, 5, 10, 15].includes(timer)) return
         if (!Number.isInteger(roundCount) || roundCount < 10 || roundCount > 20) return
         if (!Number.isInteger(cooldownSeconds) || cooldownSeconds < 3 || cooldownSeconds > 10) return
+        if (!Number.isInteger(maxPlayers) || maxPlayers < 2 || maxPlayers > 10) return
+        if (room.players.length > maxPlayers) return
 
-        room.settings = { timer, roundCount, cooldownSeconds }
+        room.settings = { timer, roundCount, cooldownSeconds, maxPlayers }
         io.to(data.roomCode).emit('lobbySettingsUpdated', { settings: room.settings })
     })
 

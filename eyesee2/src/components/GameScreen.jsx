@@ -2,11 +2,11 @@ import { useState, useEffect, useLayoutEffect, useRef } from "react"
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faClock, faCrown } from '@fortawesome/free-solid-svg-icons'
 import socket from "../socket";
+import { ActivityLog } from './ActivityLog'
 
 
 
-export const GameScreen = ({ setScreen, rounds, playerName, isHost, hostId, initialPlayers, initialTimer, initialTimerDuration }) => {
-    // const defaultTimer = 10;
+export const GameScreen = ({ setScreen, rounds, playerName, isHost, hostId, initialPlayers, initialTimer, initialTimerDuration, activities }) => {
     const [score, setScore] = useState(0)
     const [roundIndex, setRoundIndex] = useState(0)
     const [gameOver, setGameOver] = useState(false)
@@ -15,16 +15,30 @@ export const GameScreen = ({ setScreen, rounds, playerName, isHost, hostId, init
     const [roundLocked, setRoundLocked] = useState(false)
     const [displayedRoundIndex, setDisplayedRoundIndex] = useState(0)
     const [cardStage, setCardStage] = useState("idle")
-    const [gameStart, setGameStart] = useState(true)
+    const [gameCountdown, setGameCountdown] = useState(3)
     const [players, setPlayers] = useState(initialPlayers)
     const [winner, setWinner] = useState("")
-    const [activities, setActivities] = useState([])
-    const [now, setNow] = useState(Date.now())
+    const [now, setNow] = useState(() => Date.now())
     const leaderboardRef = useRef(null)
     const playerPositions = useRef(new Map())
     const displayedRoundRef = useRef(0)
     const transitioningRoundRef = useRef(null)
     const cardTransitionTimers = useRef([])
+
+    useEffect(() => {
+        const countdownTimer = setInterval(() => {
+            setGameCountdown(currentCount => {
+                if (currentCount <= 1) {
+                    clearInterval(countdownTimer)
+                    return 0
+                }
+
+                return currentCount - 1
+            })
+        }, 1000)
+
+        return () => clearInterval(countdownTimer)
+    }, [])
 
 
 
@@ -103,7 +117,6 @@ export const GameScreen = ({ setScreen, rounds, playerName, isHost, hostId, init
             setTimerDuration(data.timerDuration)
             setWinner("")
             setPlayers([])
-            setActivities([])
             setRoundLocked(false)
         })
 
@@ -120,9 +133,6 @@ export const GameScreen = ({ setScreen, rounds, playerName, isHost, hostId, init
         socket.on('matchDone', (data) => {
             playCardTransition(data.currentRound)
         })
-        socket.on('activityUpdate', (activity) => {
-            setActivities(currentActivities => [...currentActivities, activity].slice(-8))
-        })
         return () => {
             socket.off('timerTick')
             socket.off('newRound')
@@ -133,7 +143,6 @@ export const GameScreen = ({ setScreen, rounds, playerName, isHost, hostId, init
             socket.off('playerDisconnected')
             socket.off('cooldownUpdated')
             socket.off('matchDone')
-            socket.off('activityUpdate')
             clearInterval(countdownInterval)
             clearCardTransitionTimers()
 
@@ -183,7 +192,7 @@ export const GameScreen = ({ setScreen, rounds, playerName, isHost, hostId, init
     const cooldownRemaining = Math.max(0, Math.ceil(((localPlayer?.cooldownUntil || 0) - now) / 1000))
 
     const handleClick = (symbol) => {
-        if (roundLocked || cooldownRemaining > 0) return
+        if (gameCountdown > 0 || roundLocked || cooldownRemaining > 0) return
 
         if (symbol === currentRound.match) {
             setScore(score + 1)
@@ -316,8 +325,13 @@ export const GameScreen = ({ setScreen, rounds, playerName, isHost, hostId, init
                 {playerList}
             </aside>
             <main className="game-main">
+                {gameCountdown > 0 && !gameOver && (
+                    <div className="round-countdown" aria-live="assertive">
+                        <span>{gameCountdown}</span>
+                    </div>
+                )}
                 {!gameOver && (
-                    <div className={`game-cards-area card-stage-${cardStage}`}>
+                    <div className={`game-cards-area card-stage-${cardStage} ${gameCountdown > 0 ? 'cards-countdown' : ''}`}>
                         <div className="card" key={`center-${displayedRoundIndex}`}>
                             {centerCard.map((symbol, index) => (
                                 <span
@@ -360,23 +374,7 @@ export const GameScreen = ({ setScreen, rounds, playerName, isHost, hostId, init
             </main>
 
             <aside className="game-sidebar" aria-label="Game activity">
-                <section className="game-activity-panel">
-                    <div className="game-activity-list" role="log" aria-live="polite">
-                        {activities.length > 0 ? (
-                            activities.map((activity) => (
-                                <p
-                                    className={`game-activity-entry activity-${activity.type}`}
-                                    key={`${activity.id}-${activity.timestamp}`}
-                                >
-                                    <strong>{activity.name}</strong>{' '}
-                                    {activity.type === 'correct' ? 'found it!' : 'oopsies wrong.'}
-                                </p>
-                            ))
-                        ) : (
-                            <p className="game-activity-empty">Eye Seeeeeee twooooooooooo!</p>
-                        )}
-                    </div>
-                </section>
+                <ActivityLog activities={activities} emptyMessage="Eye Seeeeeee twooooooooooo!" />
             </aside>
         </div>
     )
