@@ -17,6 +17,7 @@ function App() {
   const [players, setPlayers] = useState([])
   const [lobbySettings, setLobbySettings] = useState({ timer: 0, roundCount: 15, cooldownSeconds: 5, maxPlayers: 2 })
   const [activities, setActivities] = useState([])
+  const [joinError, setJoinError] = useState("")
 
   useEffect(() => {
     socket.on("connect", () => {
@@ -78,7 +79,7 @@ function App() {
     })
 
     socket.on("joinError", (data) => {
-      alert(data.message)
+      setJoinError(data.message)
     })
 
     socket.on("activityUpdate", (activity) => {
@@ -105,6 +106,8 @@ function App() {
           setPlayerName={setPlayerName}
           playerName={playerName}
           setRoomCode={setRoomCode}
+          joinError={joinError}
+          clearJoinError={() => setJoinError("")}
         />
       )}
 

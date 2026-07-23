@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import socket from '../socket'
+import gameLogo from '../assets/logo.png'
 
-export const HomeScreen = ({ setPlayerName, playerName, setRoomCode }) => {
+export const HomeScreen = ({ setPlayerName, playerName, setRoomCode, joinError, clearJoinError }) => {
     const [roomCodeLocal, setRoomCodeLocal] = useState("")
 
     const handleCreateRoom = () => {
@@ -9,6 +10,7 @@ export const HomeScreen = ({ setPlayerName, playerName, setRoomCode }) => {
             alert("please enter your name first!")
             return
         }
+        clearJoinError()
         socket.emit('createRoom', { playerName })
 
     }
@@ -23,12 +25,14 @@ export const HomeScreen = ({ setPlayerName, playerName, setRoomCode }) => {
             return
         }
         setRoomCode(roomCodeLocal)
+        clearJoinError()
         socket.emit('joinRoom', { playerName, roomCode: roomCodeLocal })
 
     }
 
     return (
         <div className="home-page">
+            <img className="home-game-mark" src={gameLogo} alt="EyeSee2 game logo" />
             <h1 className="home-logo">EyeSee2</h1>
             <p className="home-tagline">spot the match · beat your friends</p>
 
@@ -65,6 +69,16 @@ export const HomeScreen = ({ setPlayerName, playerName, setRoomCode }) => {
                 </button>
 
             </div>
+
+            {joinError && (
+                <div className="home-error-overlay" role="presentation">
+                    <section className="home-error-modal" role="alertdialog" aria-modal="true" aria-labelledby="join-error-title">
+                        <h2 id="join-error-title">Oops!</h2>
+                        <p>{joinError === 'This room is full.' ? 'Room is full!' : joinError}</p>
+                        <button className="home-error-confirm" onClick={clearJoinError}>Okay!</button>
+                    </section>
+                </div>
+            )}
 
         </div>
     )
