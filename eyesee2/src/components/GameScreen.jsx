@@ -3,10 +3,11 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faClock, faCrown } from '@fortawesome/free-solid-svg-icons'
 import socket from "../socket";
 import { ActivityLog } from './ActivityLog'
+import { Results } from './Results'
 
 
 
-export const GameScreen = ({ setScreen, rounds, playerName, isHost, hostId, initialPlayers, initialTimer, initialTimerDuration, activities }) => {
+export const GameScreen = ({ rounds, playerName, isHost, hostId, initialPlayers, initialTimer, initialTimerDuration, activities }) => {
     const [score, setScore] = useState(0)
     const [roundIndex, setRoundIndex] = useState(0)
     const [gameOver, setGameOver] = useState(false)
@@ -203,20 +204,7 @@ export const GameScreen = ({ setScreen, rounds, playerName, isHost, hostId, init
         }
     }
 
-    const restartGame = () => {
-        setScore(0)
-        setRoundIndex(0)
-        setGameOver(false)
-        socket.emit('restartGame')
-    }
-    const lobby = () => {
-        setRoundIndex(0)
-        setScore(0)
-        setGameOver(false)
-        setWinner("")
-        setPlayers([])
-        setScreen("lobby")
-    }
+    const lobby = () => socket.emit('returnToLobby')
 
 
     const centerCard = currentRound.center;
@@ -361,15 +349,11 @@ export const GameScreen = ({ setScreen, rounds, playerName, isHost, hostId, init
                 )}
 
                 {gameOver && (
-                    <div className="game-over-box">
-                        <h1>🏆 {winner} wins!</h1>
-                        <button className="lobby-btn-start" onClick={isHost ? restartGame : undefined}>
-                            Play Again
-                        </button>
-                        <button className="lobby-btn-start" onClick={lobby}>
-                            Lobby
-                        </button>
-                    </div>
+                    <Results
+                        winner={winner}
+                        players={sortedPlayers}
+                        onLobby={lobby}
+                    />
                 )}
             </main>
 

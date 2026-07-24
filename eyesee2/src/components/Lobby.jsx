@@ -68,6 +68,7 @@ export const Lobby = ({ playerName, roomCode, isHost, hostId, players, lobbySett
         return secondPlayer.score - firstPlayer.score
     })
     const leaderboardState = sortedPlayers.map(player => `${player.id}:${player.score}:${player.connected}`).join('|')
+    const everyoneIsInLobby = players.length > 0 && players.every(player => player.inLobby !== false)
 
     useLayoutEffect(() => {
         const leaderboard = leaderboardRef.current
@@ -149,6 +150,7 @@ export const Lobby = ({ playerName, roomCode, isHost, hostId, players, lobbySett
                                 value={selectedRounds}
                                 onChange={(e) => handleRoundsChange(Number(e.target.value))}
                             >
+                                <option value={1}>1 round</option>
                                 <option value={10}>10 rounds</option>
                                 <option value={11}>11 rounds</option>
                                 <option value={12}>12 rounds</option>
@@ -211,7 +213,12 @@ export const Lobby = ({ playerName, roomCode, isHost, hostId, players, lobbySett
                 </div>
 
                 {isHost ? (
-                    <button className="lobby-btn-start" onClick={handleStartGame}>
+                    <button
+                        className="lobby-btn-start"
+                        onClick={handleStartGame}
+                        disabled={!everyoneIsInLobby}
+                        title={everyoneIsInLobby ? 'Start game' : 'Waiting for every player to return to the lobby'}
+                    >
                         Start Game
                     </button>
                 ) : (
@@ -230,7 +237,7 @@ export const Lobby = ({ playerName, roomCode, isHost, hostId, players, lobbySett
                             className="leaderboard-row"
                         >
                             <span className="player-rank">#{index + 1}</span>
-                            <div className={`lobby-player-box ${player.connected === false ? 'player-inactive' : ''}`}>
+                            <div className={`lobby-player-box ${player.connected === false || player.inLobby === false ? 'player-inactive' : ''}`}>
                                 <div className={`lobby-player-avatar ${index === 1 ? 'p2' : ''}`}>
                                     {player.name[0].toUpperCase()}
                                 </div>

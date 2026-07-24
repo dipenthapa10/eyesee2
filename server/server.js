@@ -24,12 +24,95 @@ app.use(express.urlencoded({ extended: true })) // server read from data
 const PORT = 3001
 const rooms = {}
 const ROUND_RESULT_DELAY = 800
+const RESULT_SCREEN_DURATION = 15_000
 
 const clearRoundCooldowns = (room) => {
     room.players.forEach(player => {
         delete player.cooldownUntil
         delete player.correctUntil
     })
+}
+
+const withLobbyStatus = (room, returnedPlayerIds) => room.players.map(player => ({
+    ...player,
+    inLobby: returnedPlayerIds.has(player.id)
+}))
+
+const returnRoomToLobby = (roomCode, room) => {
+    clearInterval(room.interval)
+    clearTimeout(room.resultTimer)
+    room.gameStarted = false
+    room.phase = 'lobby'
+    room.currentRound = 0
+    room.rounds = []
+    room.roundLocked = false
+    clearRoundCooldowns(room)
+    room.players = room.players.filter(player => player.connected !== false)
+
+    if (room.players.length === 0) {
+        delete rooms[roomCode]
+        return
+    }
+
+    room.players.forEach(player => { player.score = 0 })
+
+    const earlyLobbyPlayerIds = room.resultLobbyPlayerIds || new Set()
+    const playersReturningAfterResults = room.players.filter(player => !earlyLobbyPlayerIds.has(player.id))
+
+    io.to(roomCode).emit('returnedToLobby', {
+        roomCode,
+        players: withLobbyStatus(room, new Set(room.players.map(player => player.id))),
+        hostId: room.hostId,
+        settings: room.settings
+    })
+
+    playersReturningAfterResults.forEach(player => {
+        io.to(roomCode).emit('activityUpdate', {
+            id: player.id,
+            name: player.name,
+            type: 'notice',
+            message: 'joined the room.',
+            timestamp: Date.now()
+        })
+    })
+
+    delete room.resultLobbyPlayerIds
+}
+
+const sendEarlyLobbyState = (roomCode, room) => {
+    const playersWithLobbyStatus = withLobbyStatus(room, room.resultLobbyPlayerIds)
+
+    room.resultLobbyPlayerIds.forEach(playerId => {
+        io.to(playerId).emit('returnedToLobby', {
+            roomCode,
+            players: playersWithLobbyStatus,
+            hostId: room.hostId,
+            settings: room.settings
+        })
+    })
+}
+
+const finishGame = (roomCode, room) => {
+    clearInterval(room.interval)
+    room.phase = 'results'
+    room.roundLocked = true
+    clearRoundCooldowns(room)
+    room.resultLobbyPlayerIds = new Set()
+
+    const winner = room.players.reduce((firstPlayer, secondPlayer) =>
+        firstPlayer.score >= secondPlayer.score ? firstPlayer : secondPlayer
+    )
+
+    io.to(roomCode).emit('gameOver', {
+        winner: winner.name,
+        players: room.players
+    })
+
+    clearTimeout(room.resultTimer)
+    room.resultTimer = setTimeout(() => {
+        if (rooms[roomCode] !== room) return
+        returnRoomToLobby(roomCode, room)
+    }, RESULT_SCREEN_DURATION)
 }
 
 // game data
@@ -61,6 +144,7 @@ io.on('connection', (socket) => {
                 score: 0
             }],
             gameStarted: false,
+            phase: 'lobby',
             currentRound: 0,
             settings: { timer: 0, roundCount: 15, cooldownSeconds: 5, maxPlayers: 2 },
             deck: []
@@ -81,13 +165,21 @@ io.on('connection', (socket) => {
     socket.on('joinRoom', (data) => {
         console.log(`room joined by ${data.playerName || socket.id}`)
 
+        const roomCode = String(data.roomCode || '').trim().toUpperCase()
+
         console.log("joinRoom received on server:", data)
         console.log("rooms available:", Object.keys(rooms))
-        console.log("looking for room:", data.roomCode)
-        console.log("room exists?", !!rooms[data.roomCode])
+        console.log("looking for room:", roomCode)
+        console.log("room exists?", !!rooms[roomCode])
 
-        if (rooms[data.roomCode]) {
-            if (rooms[data.roomCode].players.length >= rooms[data.roomCode].settings.maxPlayers) {
+        if (rooms[roomCode]) {
+            const room = rooms[roomCode]
+            if (room.phase !== 'lobby') {
+                socket.emit("joinError", { message: "Please wait for the game to return to the lobby." })
+                return
+            }
+
+            if (room.players.filter(player => player.connected !== false).length >= room.settings.maxPlayers) {
                 socket.emit("joinError", { message: "This room is full." })
                 return
             }
@@ -97,18 +189,18 @@ io.on('connection', (socket) => {
                 name: data.playerName,
                 score: 0
             }
-            rooms[data.roomCode].players.push(player)
+            room.players.push(player)
 
-            socket.join(data.roomCode)
-            console.log(`new player has joined the room ${data.roomCode}`)
+            socket.join(roomCode)
+            console.log(`new player has joined the room ${roomCode}`)
 
-            io.to(data.roomCode).emit('playerJoined', {
-                players: rooms[data.roomCode].players,
-                hostId: rooms[data.roomCode].hostId,
-                roomCode: data.roomCode,
-                settings: rooms[data.roomCode].settings
+            io.to(roomCode).emit('playerJoined', {
+                players: room.players,
+                hostId: room.hostId,
+                roomCode,
+                settings: room.settings
             })
-            io.to(data.roomCode).emit('activityUpdate', {
+            io.to(roomCode).emit('activityUpdate', {
                 id: player.id,
                 name: player.name,
                 type: 'notice',
@@ -136,14 +228,17 @@ io.on('connection', (socket) => {
             const player = room.players.find(existingPlayer => existingPlayer.id === socket.id)
             if (!player) return
 
-            if (room.gameStarted) {
+            if (room.phase === 'playing') {
                 player.connected = false
             } else {
                 room.players = room.players.filter(existingPlayer => existingPlayer.id !== socket.id)
+                room.resultLobbyPlayerIds?.delete(socket.id)
             }
 
             io.to(roomCode).emit('playerDisconnected', {
-                players: room.players,
+                players: room.phase === 'results'
+                    ? withLobbyStatus(room, room.resultLobbyPlayerIds)
+                    : room.players,
                 playerId: socket.id
             })
             io.to(roomCode).emit('activityUpdate', {
@@ -153,13 +248,20 @@ io.on('connection', (socket) => {
                 message: 'left the room.',
                 timestamp: Date.now()
             })
+
+            if (room.phase === 'results') {
+                sendEarlyLobbyState(roomCode, room)
+            }
             return
         }
 
         // A game cannot continue without its host. Stop its timer before
         // returning the remaining players to the lobby.
         clearInterval(room.interval)
+        clearTimeout(room.resultTimer)
         room.gameStarted = false
+        room.phase = 'lobby'
+        delete room.resultLobbyPlayerIds
         const departingHost = room.players.find(player => player.id === socket.id)
         room.players = room.players.filter(
             player => player.id !== socket.id && player.connected !== false
@@ -180,17 +282,29 @@ io.on('connection', (socket) => {
             hostId: room.hostId
         })
         io.to(roomCode).emit('activityUpdate', {
-            id: nextHost.id,
-            name: nextHost.name,
+            id: departingHost?.id || socket.id,
+            name: departingHost?.name || 'The host',
             type: 'notice',
-            message: `${departingHost?.name || 'The host'} left. You are now the host.`,
+            message: 'left the room.',
             timestamp: Date.now()
+        })
+
+        room.players.forEach(player => {
+            const isNewHost = player.id === nextHost.id
+
+            io.to(player.id).emit('activityUpdate', {
+                id: nextHost.id,
+                name: isNewHost ? 'You' : nextHost.name,
+                type: 'notice',
+                message: isNewHost ? 'are now the host.' : 'is now the host.',
+                timestamp: Date.now()
+            })
         })
     })
 
     socket.on('updateLobbySettings', (data) => {
         const room = rooms[data.roomCode]
-        if (!room || room.hostId !== socket.id || room.gameStarted) return
+        if (!room || room.hostId !== socket.id || room.phase !== 'lobby') return
 
         const timer = Number(data.timer)
         const roundCount = Number(data.roundCount)
@@ -198,7 +312,7 @@ io.on('connection', (socket) => {
         const maxPlayers = Number(data.maxPlayers)
 
         if (![0, 5, 10, 15].includes(timer)) return
-        if (!Number.isInteger(roundCount) || roundCount < 10 || roundCount > 20) return
+        if (!Number.isInteger(roundCount) || (roundCount !== 1 && (roundCount < 10 || roundCount > 20))) return
         if (!Number.isInteger(cooldownSeconds) || cooldownSeconds < 3 || cooldownSeconds > 10) return
         if (!Number.isInteger(maxPlayers) || maxPlayers < 2 || maxPlayers > 10) return
         if (room.players.length > maxPlayers) return
@@ -207,22 +321,33 @@ io.on('connection', (socket) => {
         io.to(data.roomCode).emit('lobbySettingsUpdated', { settings: room.settings })
     })
 
+    socket.on('returnToLobby', () => {
+        const roomCode = [...socket.rooms].find(roomId => roomId !== socket.id)
+        const room = rooms[roomCode]
+        if (!room || room.phase !== 'results' || !room.resultLobbyPlayerIds) return
+
+        room.resultLobbyPlayerIds.add(socket.id)
+        sendEarlyLobbyState(roomCode, room)
+    })
+
     socket.on('startGame', (data) => {
         const roomCode = data.roomCode
         const room = rooms[roomCode]
-        if (!room || room.hostId !== socket.id) return
+        if (!room || room.hostId !== socket.id || room.phase !== 'lobby') return
+        clearTimeout(room.resultTimer)
         room.players.forEach(p => p.score = 0)
         clearRoundCooldowns(room)
 
         const timerDuration = room.settings.timer
         room.gameStarted = true
+        room.phase = 'playing'
         room.roundLocked = false
         room.currentRound = 0
         room.timerDuration = timerDuration
         room.timer = timerDuration
 
         const roundCount = room.settings.roundCount
-        const safeRoundCount = Math.min(Math.max(roundCount, 10), 20)
+        const safeRoundCount = roundCount === 1 ? 1 : Math.min(Math.max(roundCount, 10), 20)
         const gameRounds = createRounds(safeRoundCount)
 
         room.roundCount = safeRoundCount
@@ -249,17 +374,7 @@ io.on('connection', (socket) => {
                 room.currentRound += 1
 
                 if (room.currentRound >= room.rounds.length) {
-                    clearInterval(room.interval)
-
-                    const winner = room.players.reduce((a, b) =>
-                        a.score > b.score ? a : b
-                    )
-
-                    io.to(roomCode).emit('gameOver', {
-                        winner: winner.name,
-                        players: room.players
-                    })
-
+                    finishGame(roomCode, room)
                     return
                 }
 
@@ -352,14 +467,7 @@ io.on('connection', (socket) => {
             room.currentRound += 1
 
             if (room.currentRound >= room.rounds.length) {
-                const winner = room.players.reduce((a, b) =>
-                    a.score > b.score ? a : b
-                )
-
-                io.to(roomCode).emit('gameOver', {
-                    winner: winner.name,
-                    players: room.players
-                })
+                finishGame(roomCode, room)
                 return
             }
 
@@ -384,14 +492,7 @@ io.on('connection', (socket) => {
                 room.currentRound += 1
 
                 if (room.currentRound >= room.rounds.length) {
-                    clearInterval(room.interval)
-                    const winner = room.players.reduce((a, b) =>
-                        a.score > b.score ? a : b
-                    )
-                    io.to(roomCode).emit('gameOver', {
-                        winner: winner.name,
-                        players: room.players
-                    })
+                    finishGame(roomCode, room)
                     return
                 }
 

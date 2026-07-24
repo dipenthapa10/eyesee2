@@ -317,6 +317,12 @@ input::placeholder {
     background: #333;
 }
 
+.lobby-btn-start:disabled {
+    background: #777;
+    cursor: not-allowed;
+    opacity: 0.65;
+}
+
 .lobby-player-box {
     background: white;
     border-radius: 12px;
@@ -454,18 +460,178 @@ input::placeholder {
 
 .game-over-box {
     flex: 1;
+    position: relative;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 20px;
+    gap: 16px;
+    padding: 12px 0;
+    overflow-y: auto;
     font-family: 'Happy Monkey', cursive;
 }
 
-.game-over-box h1 {
-    font-size: 32px;
-    color: #111;
+.final-podium {
+    width: min(480px, 100%);
     text-align: center;
+    color: #111;
+}
+
+.final-podium-label {
+    margin: 0 0 3px;
+    color: #666;
+    font-size: 12px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+.final-podium h1 {
+    margin: 0 0 14px;
+    font-size: clamp(24px, 3vw, 34px);
+    overflow-wrap: anywhere;
+}
+
+.podium-places {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    gap: 8px;
+    min-height: 205px;
+}
+
+.podium-place {
+    width: min(30%, 135px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+}
+
+.podium-letter {
+    width: 48px;
+    height: 48px;
+    display: grid;
+    place-items: center;
+    border: 3px solid #222;
+    border-radius: 50%;
+    background: #fff;
+    font-size: 22px;
+}
+
+.podium-place strong {
+    width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 14px;
+}
+
+.podium-step {
+    width: 100%;
+    height: 74px;
+    box-sizing: border-box;
+    padding: 10px 7px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    border: 3px solid #222;
+    background: #e8e8e8;
+}
+
+.podium-step span {
+    font-size: 26px;
+}
+
+.podium-step small {
+    margin-top: 2px;
+    font-size: 12px;
+}
+
+.podium-place-1 .podium-letter {
+    border-color: #b98500;
+    background: #fff1a8;
+}
+
+.podium-place-1 .podium-step {
+    height: 118px;
+    background: #fff1a8;
+}
+
+.podium-place-2 .podium-step {
+    height: 90px;
+}
+
+.podium-place-3 .podium-step {
+    height: 70px;
+}
+
+.final-scoreboard {
+    width: min(380px, 100%);
+    overflow: hidden;
+    border: 2px solid #222;
+    border-radius: 10px;
+    background: #fff;
+}
+
+.final-scoreboard-title {
+    margin: 0;
+    padding: 8px 12px;
+    border-bottom: 2px solid #222;
+    color: #666;
+    font-size: 12px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+.final-score-row {
+    display: grid;
+    grid-template-columns: 42px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 10px;
+    min-height: 38px;
+    padding: 7px 12px;
+    border-bottom: 1px solid #ddd;
+    color: #222;
+    font-size: 14px;
+}
+
+.final-score-row:last-child {
+    border-bottom: 0;
+}
+
+.final-score-row strong {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.final-score-row> :last-child {
+    min-width: 24px;
+    padding: 2px 6px;
+    border: 1px solid #ccc;
+    border-radius: 999px;
+    text-align: center;
+}
+
+.results-exit-button {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    width: 38px;
+    height: 38px;
+    display: grid;
+    place-items: center;
+    border: 2px solid #222;
+    border-radius: 50%;
+    background: #fff;
+    color: #222;
+    cursor: pointer;
+    font-size: 17px;
+}
+
+.results-exit-button:hover {
+    background: #eee;
 }
 
 /* ===========================
@@ -571,7 +737,7 @@ input::placeholder {
 
 .game-over-box .lobby-btn-start {
     width: auto;
-    min-width: 220px;
+    min-width: 150px;
     margin-top: 0;
     display: block;
 }
@@ -695,6 +861,10 @@ input::placeholder {
     font-weight: bold;
     line-height: 1.35;
     flex-shrink: 0;
+}
+
+.game-activity-entry {
+    border-bottom: 1px solid rgba(34, 34, 34, 0.18);
 }
 
 .activity-correct {

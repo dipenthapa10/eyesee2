@@ -34,6 +34,7 @@ function App() {
       setRoomCode(data.roomCode)
       setPlayers(data.players)
       setHostId(data.hostId)
+      setIsHost(data.hostId === socket.id)
       setLobbySettings(data.settings)
       setActivities([])
       setScreen("lobby")
@@ -60,6 +61,16 @@ function App() {
       setRounds(data.rounds)
       setTimer(data.timer)
       setTimerDuration(data.timerDuration)
+    })
+
+    socket.on("returnedToLobby", (data) => {
+      setRoomCode(data.roomCode)
+      setPlayers(data.players)
+      setHostId(data.hostId)
+      setIsHost(data.hostId === socket.id)
+      setLobbySettings(data.settings)
+      setActivities([])
+      setScreen("lobby")
     })
 
     socket.on("hostDisconnected", (data) => {
@@ -91,6 +102,7 @@ function App() {
       socket.off("playerJoined")
       socket.off("gameStarted")
       socket.off("gameRestarted")
+      socket.off("returnedToLobby")
       socket.off("hostDisconnected")
       socket.off("playerDisconnected")
       socket.off("lobbySettingsUpdated")
