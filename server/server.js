@@ -38,6 +38,20 @@ const withLobbyStatus = (room, returnedPlayerIds) => room.players.map(player => 
     inLobby: returnedPlayerIds.has(player.id)
 }))
 
+const roomPlayersForClients = (room) => room.phase === 'results'
+    ? withLobbyStatus(room, room.resultLobbyPlayerIds || new Set())
+    : room.players
+
+const broadcastRoomState = (roomCode, room) => {
+    io.to(roomCode).emit('roomStateUpdated', {
+        roomCode,
+        players: roomPlayersForClients(room),
+        hostId: room.hostId,
+        settings: room.settings,
+        phase: room.phase
+    })
+}
+
 const returnRoomToLobby = (roomCode, room) => {
     clearInterval(room.interval)
     clearTimeout(room.resultTimer)
@@ -151,6 +165,7 @@ io.on('connection', (socket) => {
         };
 
         socket.join(roomCode)
+        socket.data.roomCode = roomCode
         console.log(`room ${roomCode} successfully created by ${socket.id}`)
 
         socket.emit('roomCreated', {
@@ -192,8 +207,10 @@ io.on('connection', (socket) => {
             room.players.push(player)
 
             socket.join(roomCode)
+            socket.data.roomCode = roomCode
             console.log(`new player has joined the room ${roomCode}`)
 
+            broadcastRoomState(roomCode, room)
             io.to(roomCode).emit('playerJoined', {
                 players: room.players,
                 hostId: room.hostId,
@@ -219,7 +236,7 @@ io.on('connection', (socket) => {
     socket.on('disconnecting', () => {
         console.log('player disconnects:', socket.id)
 
-        const roomCode = [...socket.rooms].find(room => room !== socket.id)
+        const roomCode = socket.data.roomCode || [...socket.rooms].find(room => room !== socket.id)
         const room = rooms[roomCode]
 
         if (!room) return
@@ -236,11 +253,10 @@ io.on('connection', (socket) => {
             }
 
             io.to(roomCode).emit('playerDisconnected', {
-                players: room.phase === 'results'
-                    ? withLobbyStatus(room, room.resultLobbyPlayerIds)
-                    : room.players,
+                players: roomPlayersForClients(room),
                 playerId: socket.id
             })
+            broadcastRoomState(roomCode, room)
             io.to(roomCode).emit('activityUpdate', {
                 id: player.id,
                 name: player.name,
@@ -281,6 +297,7 @@ io.on('connection', (socket) => {
             players: room.players,
             hostId: room.hostId
         })
+        broadcastRoomState(roomCode, room)
         io.to(roomCode).emit('activityUpdate', {
             id: departingHost?.id || socket.id,
             name: departingHost?.name || 'The host',
@@ -327,6 +344,19 @@ io.on('connection', (socket) => {
         if (!room || room.phase !== 'results' || !room.resultLobbyPlayerIds) return
 
         room.resultLobbyPlayerIds.add(socket.id)
+
+        // If every active player has already left the results screen, there
+        // is no reason to keep the room in its 15-second results phase. Move
+        // the room back to the real lobby now so the host can start again.
+        const everyoneReturned = room.players
+            .filter(player => player.connected !== false)
+            .every(player => room.resultLobbyPlayerIds.has(player.id))
+
+        if (everyoneReturned) {
+            returnRoomToLobby(roomCode, room)
+            return
+        }
+
         sendEarlyLobbyState(roomCode, room)
     })
 

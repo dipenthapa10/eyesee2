@@ -5,11 +5,23 @@ import socket from "../socket";
 import { ActivityLog } from './ActivityLog'
 import { Results } from './Results'
 
+const characterFiles = import.meta.glob(
+    '../assets/characters-cropped/Slice *.svg',
+    { eager: true, query: '?url', import: 'default' }
+)
+
+const characterBySymbol = Object.fromEntries(
+    Object.entries(characterFiles).map(([path, imageUrl]) => {
+        const sliceNumber = path.match(/Slice (\d+)\.svg$/)?.[1]
+        return [`symbol-${sliceNumber}`, imageUrl]
+    })
+)
+
+const cardLayoutCache = new Map()
 
 
 export const GameScreen = ({ rounds, playerName, isHost, hostId, initialPlayers, initialTimer, initialTimerDuration, activities }) => {
     const [score, setScore] = useState(0)
-    const [roundIndex, setRoundIndex] = useState(0)
     const [gameOver, setGameOver] = useState(false)
     const [timer, setTimer] = useState(initialTimer)
     const [timerDuration, setTimerDuration] = useState(initialTimerDuration)
@@ -52,12 +64,10 @@ export const GameScreen = ({ rounds, playerName, isHost, hostId, initialPlayers,
             cardTransitionTimers.current = []
         }
         const playCardTransition = (nextRoundIndex) => {
-            setRoundIndex(nextRoundIndex)
-
             if (displayedRoundRef.current === nextRoundIndex) {
                 clearCardTransitionTimers()
                 setCardStage("deal")
-                cardTransitionTimers.current.push(setTimeout(() => setCardStage("idle"), 480))
+                cardTransitionTimers.current.push(setTimeout(() => setCardStage("idle"), 640))
                 setRoundLocked(false)
                 return
             }
@@ -73,13 +83,13 @@ export const GameScreen = ({ rounds, playerName, isHost, hostId, initialPlayers,
                 displayedRoundRef.current = nextRoundIndex
                 setDisplayedRoundIndex(nextRoundIndex)
                 setCardStage("deal")
-            }, 280))
+            }, 360))
 
             cardTransitionTimers.current.push(setTimeout(() => {
                 transitioningRoundRef.current = null
                 setCardStage("idle")
                 setRoundLocked(false)
-            }, 760))
+            }, 1_040))
         }
 
 
@@ -107,11 +117,10 @@ export const GameScreen = ({ rounds, playerName, isHost, hostId, initialPlayers,
 
         socket.on('gameRestarted', (data) => {
             clearCardTransitionTimers()
-            setRoundIndex(0)
             displayedRoundRef.current = 0
             setDisplayedRoundIndex(0)
             setCardStage("deal")
-            cardTransitionTimers.current.push(setTimeout(() => setCardStage("idle"), 480))
+            cardTransitionTimers.current.push(setTimeout(() => setCardStage("idle"), 640))
             setScore(0)
             setGameOver(false)
             setTimer(data.timer)
@@ -198,9 +207,9 @@ export const GameScreen = ({ rounds, playerName, isHost, hostId, initialPlayers,
         if (symbol === currentRound.match) {
             setScore(score + 1)
             setRoundLocked(true)
-            socket.emit('cardMatch', { playerName, symbol, roundIndex })
+            socket.emit('cardMatch', { playerName, symbol, roundIndex: displayedRoundIndex })
         } else {
-            socket.emit('wrongAnswer', { symbol, roundIndex })
+            socket.emit('wrongAnswer', { symbol, roundIndex: displayedRoundIndex })
         }
     }
 
@@ -210,38 +219,155 @@ export const GameScreen = ({ rounds, playerName, isHost, hostId, initialPlayers,
     const centerCard = currentRound.center;
     const yourCard = currentRound.yours;
 
-    const getSizeVariant = (symbol, cardId) => {
-        let hash = 0
+    const createCardLayout = (cardId) => {
+        const cachedLayout = cardLayoutCache.get(cardId)
+        if (cachedLayout) return cachedLayout
 
-        for (const character of `${cardId}-${symbol}`) {
-            hash = (hash * 31 + character.codePointAt(0)) >>> 0
+        let seed = 0
+
+        for (const character of cardId) {
+            seed = (seed * 31 + character.codePointAt(0)) >>> 0
         }
 
-        return hash % 3
+        const random = () => {
+            seed += 0x6D2B79F5
+            let value = seed
+            value = Math.imul(value ^ (value >>> 15), value | 1)
+            value ^= value + Math.imul(value ^ (value >>> 7), value | 61)
+            return ((value ^ (value >>> 14)) >>> 0) / 4294967296
+        }
+        // Every card deliberately has two visually large symbols, four
+        // medium symbols, and only two small symbols. We shuffle the list so
+        // the same picture never always gets the same size.
+        const largeSymbolSizes = [30, 27]
+        const mediumSymbolSizes = [24, 22, 20, 18]
+        const smallSymbolSizes = [16, 14]
+        const symbolSizes = [...largeSymbolSizes, ...mediumSymbolSizes, ...smallSymbolSizes]
+
+        for (let index = symbolSizes.length - 1; index > 0; index -= 1) {
+            const swapIndex = Math.floor(random() * (index + 1))
+            ;[symbolSizes[index], symbolSizes[swapIndex]] = [symbolSizes[swapIndex], symbolSizes[index]]
+        }
+
+        const order = symbolSizes
+            .map((size, index) => ({ size, index }))
+            .sort((first, second) => second.size - first.size)
+        const safetyGap = 2.6
+        // These are scoring probes, not symbol slots. They let us reject a
+        // card that leaves a giant empty pocket anywhere inside the circle.
+        const coveragePoints = []
+        for (let x = 14; x <= 86; x += 18) {
+            for (let y = 14; y <= 86; y += 18) {
+                if (Math.hypot(x - 50, y - 50) <= 36) coveragePoints.push({ x, y })
+            }
+        }
+
+        const buildScatteredLayout = (collisionScale, restartCount) => {
+            let bestLayout = null
+            let bestLayoutScore = -Infinity
+
+            for (let restart = 0; restart < restartCount; restart += 1) {
+                const layout = Array(8)
+                let complete = true
+
+                for (const { size, index } of order) {
+                    const collisionRadius = size * collisionScale
+                    const maxRadius = 50 - collisionRadius - 1.5
+                    const validCandidates = []
+
+                    for (let attempt = 0; attempt < 460; attempt += 1) {
+                        const angle = random() * Math.PI * 2
+                        // sqrt produces points across the whole disc rather
+                        // than choosing a centre or an outer-ring position.
+                        const radius = maxRadius * Math.sqrt(random())
+                        const candidate = {
+                            x: 50 + Math.cos(angle) * radius,
+                            y: 50 + Math.sin(angle) * radius,
+                            size,
+                            collisionRadius,
+                            rotation: Math.round(random() * 360)
+                        }
+                        let smallestClearance = Infinity
+
+                        for (const placedSymbol of layout) {
+                            if (!placedSymbol) continue
+
+                            const distance = Math.hypot(candidate.x - placedSymbol.x, candidate.y - placedSymbol.y)
+                            const requiredDistance = candidate.collisionRadius + placedSymbol.collisionRadius + safetyGap
+                            smallestClearance = Math.min(smallestClearance, distance - requiredDistance)
+                        }
+
+                        if (smallestClearance >= 0) {
+                            validCandidates.push({ ...candidate, clearance: smallestClearance })
+                        }
+                    }
+
+                    if (validCandidates.length === 0) {
+                        complete = false
+                        break
+                    }
+
+                    // Pick from every safe spot: this is the key difference
+                    // from the old outer-ring layout.
+                    layout[index] = validCandidates[Math.floor(random() * validCandidates.length)]
+                }
+
+                if (!complete) continue
+
+                const smallestClearance = layout.reduce((smallest, symbol, index) => {
+                    for (let compareIndex = index + 1; compareIndex < layout.length; compareIndex += 1) {
+                        const comparison = layout[compareIndex]
+                        const distance = Math.hypot(symbol.x - comparison.x, symbol.y - comparison.y)
+                        const clearance = distance - symbol.collisionRadius - comparison.collisionRadius - safetyGap
+                        smallest = Math.min(smallest, clearance)
+                    }
+
+                    return smallest
+                }, Infinity)
+                const largestEmptyPocket = coveragePoints.reduce((largestPocket, point) => {
+                    const nearestSymbol = layout.reduce((nearest, symbol) => {
+                        const distanceToArtwork = Math.max(
+                            0,
+                            Math.hypot(point.x - symbol.x, point.y - symbol.y) - symbol.collisionRadius
+                        )
+                        return Math.min(nearest, distanceToArtwork)
+                    }, Infinity)
+
+                    return Math.max(largestPocket, nearestSymbol)
+                }, 0)
+                const layoutScore = (
+                    smallestClearance * 0.15
+                    - largestEmptyPocket * 7
+                    + random() * 0.1
+                )
+
+                if (layoutScore > bestLayoutScore) {
+                    bestLayout = layout
+                    bestLayoutScore = layoutScore
+                }
+            }
+
+            return bestLayout
+        }
+
+        // Both attempts are random scatter searches. The second one only
+        // slightly relaxes the invisible collision circle if an unusually
+        // wide set of SVGs cannot fit on the first pass.
+        const layout = buildScatteredLayout(0.56, 650) || buildScatteredLayout(0.52, 900)
+
+        cardLayoutCache.set(cardId, layout)
+        return layout
     }
 
-    const getSymbolStyle = (symbol, index, cardId) => {
-        // Eight safe zones keep the larger emoji inside the circular card.
-        const positions = [
-            { x: 50, y: 18, rotation: -20 },
-            { x: 77, y: 30, rotation: 25 },
-            { x: 82, y: 59, rotation: -35 },
-            { x: 65, y: 81, rotation: 18 },
-            { x: 35, y: 81, rotation: -28 },
-            { x: 17, y: 63, rotation: 38 },
-            { x: 21, y: 36, rotation: -32 },
-            { x: 50, y: 53, rotation: 15 }
-        ]
-        const position = positions[index % positions.length]
-        const sizeVariants = index === 7 ? [2.7, 3.2, 3.7] : [2.1, 2.7, 3.3]
-        const size = sizeVariants[getSizeVariant(symbol, cardId)]
+    const getSymbolStyle = (index, cardId) => {
+        const placement = createCardLayout(cardId)[index]
 
         return {
-            left: `${position.x}%`,
-            top: `${position.y}%`,
-            fontSize: `${size}rem`,
-            lineHeight: 1,
-            transform: `translate(-50%, -50%) rotate(${position.rotation}deg)`
+            left: `${placement.x}%`,
+            top: `${placement.y}%`,
+            width: `${placement.size}%`,
+            height: `${placement.size}%`,
+            transform: `translate(-50%, -50%) rotate(${placement.rotation}deg)`
         }
     }
 
@@ -325,10 +451,15 @@ export const GameScreen = ({ rounds, playerName, isHost, hostId, initialPlayers,
                                 <span
                                     className="symbol"
                                     key={symbol}
-                                    style={getSymbolStyle(symbol, index, centerCard.join(''))}
-                                    onClick={() => handleClick(symbol)}
-                                >
-                                    {symbol}
+                                    style={getSymbolStyle(index, centerCard.join(''))}
+                                onClick={() => handleClick(symbol)}
+                            >
+                                    <img
+                                        className="symbol-image"
+                                        src={characterBySymbol[symbol]}
+                                        alt=""
+                                        draggable="false"
+                                    />
                                 </span>
                             ))}
                         </div>
@@ -338,10 +469,15 @@ export const GameScreen = ({ rounds, playerName, isHost, hostId, initialPlayers,
                                 <span
                                     className="symbol"
                                     key={symbol}
-                                    style={getSymbolStyle(symbol, index, yourCard.join(''))}
-                                    onClick={() => handleClick(symbol)}
-                                >
-                                    {symbol}
+                                    style={getSymbolStyle(index, yourCard.join(''))}
+                                onClick={() => handleClick(symbol)}
+                            >
+                                    <img
+                                        className="symbol-image"
+                                        src={characterBySymbol[symbol]}
+                                        alt=""
+                                        draggable="false"
+                                    />
                                 </span>
                             ))}
                         </div>

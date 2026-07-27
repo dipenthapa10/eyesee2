@@ -85,6 +85,14 @@ function App() {
       setPlayers(data.players)
     })
 
+    socket.on("roomStateUpdated", (data) => {
+      setRoomCode(data.roomCode)
+      setPlayers(data.players)
+      setHostId(data.hostId)
+      setIsHost(data.hostId === socket.id)
+      setLobbySettings(data.settings)
+    })
+
     socket.on("lobbySettingsUpdated", (data) => {
       setLobbySettings(data.settings)
     })
@@ -105,6 +113,7 @@ function App() {
       socket.off("returnedToLobby")
       socket.off("hostDisconnected")
       socket.off("playerDisconnected")
+      socket.off("roomStateUpdated")
       socket.off("lobbySettingsUpdated")
       socket.off("joinError")
       socket.off("activityUpdate")
