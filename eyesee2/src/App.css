@@ -648,10 +648,6 @@ input::placeholder {
     position: relative;
     box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15);
     overflow: hidden;
-    transform-style: preserve-3d;
-    backface-visibility: hidden;
-    will-change: opacity, transform;
-    transition: filter 0.18s ease;
 }
 
 .your-card {
@@ -681,91 +677,31 @@ input::placeholder {
     filter: brightness(0.94);
 }
 
-.game-cards-area {
-    perspective: 1200px;
+.card-enter {
+    animation: card-enter 80ms ease-out both;
 }
 
-.game-cards-area .card:first-child {
-    --card-flip-offset: 26px;
-    --card-flip-tilt: 12deg;
-}
-
-.game-cards-area .card:nth-child(2) {
-    --card-flip-offset: -26px;
-    --card-flip-tilt: -12deg;
-}
-
-.card-stage-collect .card {
-    animation: collect-card 360ms cubic-bezier(0.55, 0, 0.8, 0.3) forwards;
-}
-
-.card-stage-deal .card {
-    animation: deal-card 560ms cubic-bezier(0.16, 0.9, 0.25, 1) backwards;
-}
-
-.card-stage-deal .card::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    z-index: 3;
-    border-radius: inherit;
-    border: 3px solid #222;
-    background:
-        radial-gradient(circle at 28% 30%, rgba(255, 255, 255, 0.28) 0 4px, transparent 5px),
-        radial-gradient(circle at 68% 64%, rgba(255, 255, 255, 0.22) 0 5px, transparent 6px),
-        #70706f;
-    transform-origin: left center;
-    backface-visibility: hidden;
+.card-leave {
     pointer-events: none;
-    animation: reveal-card-face 560ms cubic-bezier(0.16, 0.9, 0.25, 1) backwards;
+    animation: card-leave 60ms ease-in both;
 }
 
-.card-stage-deal .card:nth-child(2) {
-    animation-delay: 80ms;
-}
-
-.card-stage-deal .card:nth-child(2)::after {
-    animation-delay: 80ms;
-}
-
-@keyframes collect-card {
-    to {
-        opacity: 0;
-        transform: translate3d(var(--card-flip-offset), -24px, 0) scale(0.72) rotateY(86deg) rotateZ(var(--card-flip-tilt));
-    }
-}
-
-@keyframes deal-card {
+@keyframes card-enter {
     from {
-        opacity: 0;
-        transform: translate3d(var(--card-flip-offset), 24px, 0) scale(0.72) rotateY(-155deg) rotateZ(var(--card-flip-tilt));
-    }
-
-    55% {
-        opacity: 1;
-        transform: translate3d(var(--card-flip-offset), 8px, 0) scale(0.9) rotateY(-62deg) rotateZ(var(--card-flip-tilt));
+        opacity: 0.7;
+        transform: scale(0.985);
     }
 
     to {
         opacity: 1;
-        transform: translateY(0) scale(1) rotateY(0);
+        transform: scale(1);
     }
 }
 
-@keyframes reveal-card-face {
-    0%, 38% {
-        opacity: 1;
-        transform: rotateY(0deg);
-    }
-
-    68% {
-        opacity: 1;
-        transform: rotateY(-88deg);
-    }
-
-    69%, 100% {
-        opacity: 0;
-        transform: rotateY(-90deg);
+@keyframes card-leave {
+    to {
+        opacity: 0.25;
+        transform: scale(0.985);
     }
 }
 
@@ -847,9 +783,9 @@ input::placeholder {
     line-height: 1;
 }
 
+/* During 3–2–1 show only the countdown, never faded cards underneath. */
 .cards-countdown .card {
-    opacity: 0;
-    transform: scale(0.86);
+    visibility: hidden;
 }
 
 .game-hud {

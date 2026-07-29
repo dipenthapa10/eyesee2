@@ -23,7 +23,7 @@ app.use(express.urlencoded({ extended: true })) // server read from data
 //setup for static folder  ( yet to do)  
 const PORT = 3001
 const rooms = {}
-const ROUND_RESULT_DELAY = 800
+const ROUND_RESULT_DELAY = 320
 const RESULT_SCREEN_DURATION = 15_000
 
 const clearRoundCooldowns = (room) => {
@@ -503,13 +503,20 @@ io.on('connection', (socket) => {
 
             room.timer = room.timerDuration
             room.roundLocked = false
-            clearRoundCooldowns(room)
-            io.to(roomCode).emit('cooldownUpdated', { players: room.players })
             io.to(roomCode).emit('matchDone', {
                 currentRound: room.currentRound,
                 timer: room.timer
             })
             io.to(roomCode).emit('timerTick', { timer: room.timer })
+
+            // The client takes 60ms to remove the old cards. Keep the green
+            // winner state through that moment, then clear it for the new round.
+            setTimeout(() => {
+                if (!rooms[roomCode] || room.currentRound !== data.roundIndex + 1) return
+
+                clearRoundCooldowns(room)
+                io.to(roomCode).emit('cooldownUpdated', { players: room.players })
+            }, 75)
 
             if (room.timerDuration === 0) return
 

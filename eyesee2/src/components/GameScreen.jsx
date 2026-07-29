@@ -27,7 +27,7 @@ export const GameScreen = ({ rounds, playerName, isHost, hostId, initialPlayers,
     const [timerDuration, setTimerDuration] = useState(initialTimerDuration)
     const [roundLocked, setRoundLocked] = useState(false)
     const [displayedRoundIndex, setDisplayedRoundIndex] = useState(0)
-    const [cardStage, setCardStage] = useState("idle")
+    const [cardMotion, setCardMotion] = useState('idle')
     const [gameCountdown, setGameCountdown] = useState(3)
     const [players, setPlayers] = useState(initialPlayers)
     const [winner, setWinner] = useState("")
@@ -35,8 +35,8 @@ export const GameScreen = ({ rounds, playerName, isHost, hostId, initialPlayers,
     const leaderboardRef = useRef(null)
     const playerPositions = useRef(new Map())
     const displayedRoundRef = useRef(0)
-    const transitioningRoundRef = useRef(null)
-    const cardTransitionTimers = useRef([])
+    const pendingRoundRef = useRef(null)
+    const cardMotionTimerRef = useRef(null)
 
     useEffect(() => {
         const countdownTimer = setInterval(() => {
@@ -59,37 +59,34 @@ export const GameScreen = ({ rounds, playerName, isHost, hostId, initialPlayers,
 
     useEffect(() => {
         const countdownInterval = setInterval(() => setNow(Date.now()), 250)
-        const clearCardTransitionTimers = () => {
-            cardTransitionTimers.current.forEach(clearTimeout)
-            cardTransitionTimers.current = []
+        const clearCardMotionTimer = () => {
+            clearTimeout(cardMotionTimerRef.current)
+            cardMotionTimerRef.current = null
         }
-        const playCardTransition = (nextRoundIndex) => {
+
+        const showNewRound = (nextRoundIndex) => {
+            if (pendingRoundRef.current === nextRoundIndex) return
+
             if (displayedRoundRef.current === nextRoundIndex) {
-                clearCardTransitionTimers()
-                setCardStage("deal")
-                cardTransitionTimers.current.push(setTimeout(() => setCardStage("idle"), 640))
+                clearCardMotionTimer()
+                setCardMotion('idle')
                 setRoundLocked(false)
                 return
             }
 
-            if (transitioningRoundRef.current === nextRoundIndex) return
-
-            clearCardTransitionTimers()
-            transitioningRoundRef.current = nextRoundIndex
+            clearCardMotionTimer()
+            pendingRoundRef.current = nextRoundIndex
             setRoundLocked(true)
-            setCardStage("collect")
+            setCardMotion('leaving')
 
-            cardTransitionTimers.current.push(setTimeout(() => {
+            cardMotionTimerRef.current = setTimeout(() => {
                 displayedRoundRef.current = nextRoundIndex
+                pendingRoundRef.current = null
                 setDisplayedRoundIndex(nextRoundIndex)
-                setCardStage("deal")
-            }, 360))
-
-            cardTransitionTimers.current.push(setTimeout(() => {
-                transitioningRoundRef.current = null
-                setCardStage("idle")
+                setCardMotion('idle')
                 setRoundLocked(false)
-            }, 1_040))
+                cardMotionTimerRef.current = null
+            }, 60)
         }
 
 
@@ -99,7 +96,7 @@ export const GameScreen = ({ rounds, playerName, isHost, hostId, initialPlayers,
 
         // listen for new round from server
         socket.on('newRound', (data) => {
-            playCardTransition(data.currentRound)
+            showNewRound(data.currentRound)
         })
 
         socket.on('roundWon', (data) => {
@@ -116,11 +113,11 @@ export const GameScreen = ({ rounds, playerName, isHost, hostId, initialPlayers,
         })
 
         socket.on('gameRestarted', (data) => {
-            clearCardTransitionTimers()
+            clearCardMotionTimer()
+            pendingRoundRef.current = null
             displayedRoundRef.current = 0
             setDisplayedRoundIndex(0)
-            setCardStage("deal")
-            cardTransitionTimers.current.push(setTimeout(() => setCardStage("idle"), 640))
+            setCardMotion('idle')
             setScore(0)
             setGameOver(false)
             setTimer(data.timer)
@@ -141,7 +138,7 @@ export const GameScreen = ({ rounds, playerName, isHost, hostId, initialPlayers,
             setPlayers(data.players)
         })
         socket.on('matchDone', (data) => {
-            playCardTransition(data.currentRound)
+            showNewRound(data.currentRound)
         })
         return () => {
             socket.off('timerTick')
@@ -154,7 +151,7 @@ export const GameScreen = ({ rounds, playerName, isHost, hostId, initialPlayers,
             socket.off('cooldownUpdated')
             socket.off('matchDone')
             clearInterval(countdownInterval)
-            clearCardTransitionTimers()
+            clearCardMotionTimer()
 
         }
 
@@ -445,15 +442,15 @@ export const GameScreen = ({ rounds, playerName, isHost, hostId, initialPlayers,
                     </div>
                 )}
                 {!gameOver && (
-                    <div className={`game-cards-area card-stage-${cardStage} ${gameCountdown > 0 ? 'cards-countdown' : ''}`}>
-                        <div className="card" key={`center-${displayedRoundIndex}`}>
+                    <div className={`game-cards-area ${gameCountdown > 0 ? 'cards-countdown' : ''}`}>
+                        <div className={`card ${cardMotion === 'leaving' ? 'card-leave' : 'card-enter'}`} key={`center-${displayedRoundIndex}`}>
                             {centerCard.map((symbol, index) => (
                                 <span
                                     className="symbol"
                                     key={symbol}
                                     style={getSymbolStyle(index, centerCard.join(''))}
-                                onClick={() => handleClick(symbol)}
-                            >
+                                    onClick={() => handleClick(symbol)}
+                                >
                                     <img
                                         className="symbol-image"
                                         src={characterBySymbol[symbol]}
@@ -464,14 +461,14 @@ export const GameScreen = ({ rounds, playerName, isHost, hostId, initialPlayers,
                             ))}
                         </div>
 
-                        <div className="card your-card" key={`yours-${displayedRoundIndex}`}>
+                        <div className={`card your-card ${cardMotion === 'leaving' ? 'card-leave' : 'card-enter'}`} key={`yours-${displayedRoundIndex}`}>
                             {yourCard.map((symbol, index) => (
                                 <span
                                     className="symbol"
                                     key={symbol}
                                     style={getSymbolStyle(index, yourCard.join(''))}
-                                onClick={() => handleClick(symbol)}
-                            >
+                                    onClick={() => handleClick(symbol)}
+                                >
                                     <img
                                         className="symbol-image"
                                         src={characterBySymbol[symbol]}
