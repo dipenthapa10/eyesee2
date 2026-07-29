@@ -17,6 +17,7 @@ function App() {
   const [players, setPlayers] = useState([])
   const [lobbySettings, setLobbySettings] = useState({ timer: 0, roundCount: 15, cooldownSeconds: 5, maxPlayers: 2 })
   const [activities, setActivities] = useState([])
+  const [chatMessages, setChatMessages] = useState([])
   const [joinError, setJoinError] = useState("")
 
   useEffect(() => {
@@ -37,6 +38,7 @@ function App() {
       setIsHost(data.hostId === socket.id)
       setLobbySettings(data.settings)
       setActivities([])
+      setChatMessages([])
       setScreen("lobby")
       setIsHost(true)
     })
@@ -105,6 +107,10 @@ function App() {
       setActivities(currentActivities => [...currentActivities, activity].slice(-8))
     })
 
+    socket.on("chatMessage", (message) => {
+      setChatMessages(currentMessages => [...currentMessages, message].slice(-50))
+    })
+
     return () => {
       socket.off("roomCreated")
       socket.off("playerJoined")
@@ -117,6 +123,7 @@ function App() {
       socket.off("lobbySettingsUpdated")
       socket.off("joinError")
       socket.off("activityUpdate")
+      socket.off("chatMessage")
     }
   }, [])
 
@@ -141,6 +148,7 @@ function App() {
           players={players}
           lobbySettings={lobbySettings}
           activities={activities}
+          chatMessages={chatMessages}
         />
       )}
 
@@ -155,6 +163,7 @@ function App() {
           initialTimer={timer}
           initialTimerDuration={timerDuration}
           activities={activities}
+          chatMessages={chatMessages}
         />
       )}
     </div>

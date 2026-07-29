@@ -2,7 +2,7 @@ import { useState, useEffect, useLayoutEffect, useRef } from "react"
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faClock, faCrown } from '@fortawesome/free-solid-svg-icons'
 import socket from "../socket";
-import { ActivityLog } from './ActivityLog'
+import { ChatBox } from './ChatBox'
 import { Results } from './Results'
 
 const characterFiles = import.meta.glob(
@@ -20,7 +20,7 @@ const characterBySymbol = Object.fromEntries(
 const cardLayoutCache = new Map()
 
 
-export const GameScreen = ({ rounds, playerName, isHost, hostId, initialPlayers, initialTimer, initialTimerDuration, activities }) => {
+export const GameScreen = ({ rounds, playerName, isHost, hostId, initialPlayers, initialTimer, initialTimerDuration, activities, chatMessages }) => {
     const [score, setScore] = useState(0)
     const [gameOver, setGameOver] = useState(false)
     const [timer, setTimer] = useState(initialTimer)
@@ -211,6 +211,7 @@ export const GameScreen = ({ rounds, playerName, isHost, hostId, initialPlayers,
     }
 
     const lobby = () => socket.emit('returnToLobby')
+    const handleChatSend = (text) => socket.emit('sendChatMessage', { text })
 
 
     const centerCard = currentRound.center;
@@ -491,7 +492,12 @@ export const GameScreen = ({ rounds, playerName, isHost, hostId, initialPlayers,
             </main>
 
             <aside className="game-sidebar" aria-label="Game activity">
-                <ActivityLog activities={activities} emptyMessage="Eye Seeeeeee twooooooooooo!" />
+                <ChatBox
+                    activities={activities}
+                    messages={chatMessages}
+                    onSend={handleChatSend}
+                    emptyMessage="Eye Seeeeeee twooooooooooo!"
+                />
             </aside>
         </div>
     )

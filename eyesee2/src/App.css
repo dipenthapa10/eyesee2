@@ -825,7 +825,7 @@ input::placeholder {
     border-left: 2px solid #222;
 }
 
-.game-activity-panel {
+.chat-box {
     min-height: 0;
     margin: 4px;
     display: flex;
@@ -837,28 +837,52 @@ input::placeholder {
     border-radius: 7px;
 }
 
-.game-activity-list {
-    min-height: 0;
+.chat-message-list {
     display: flex;
+    min-height: 0;
     flex: 1;
     flex-direction: column;
     justify-content: flex-end;
-    overflow: hidden;
-    padding: 0;
+    overflow-y: auto;
 }
 
-.game-activity-entry,
-.game-activity-empty {
+.chat-entry,
+.chat-empty {
     margin: 0;
-    padding: 9px 12px;
+    padding: 7px 10px;
+    border-bottom: 1px solid rgba(34, 34, 34, 0.18);
+    color: #222;
     font-size: 12px;
-    font-weight: bold;
     line-height: 1.35;
-    flex-shrink: 0;
+    overflow-wrap: anywhere;
 }
 
-.game-activity-entry {
-    border-bottom: 1px solid rgba(34, 34, 34, 0.18);
+.chat-empty {
+    margin: auto 0;
+    border-bottom: 0;
+    color: #666;
+    text-align: center;
+}
+
+.chat-form {
+    flex-shrink: 0;
+    padding: 5px;
+    border-top: 1px solid rgba(34, 34, 34, 0.18);
+}
+
+.chat-form input {
+    width: 100%;
+    padding: 8px 9px;
+    border: 1px solid #777;
+    border-radius: 4px;
+    outline: none;
+    color: #222;
+    font-family: 'Happy Monkey', cursive;
+    font-size: 12px;
+}
+
+.chat-form input:focus {
+    border-color: #222;
 }
 
 .activity-correct {
@@ -874,12 +898,6 @@ input::placeholder {
 .activity-notice {
     background: #e6eef8;
     color: #2d63a5;
-}
-
-.game-activity-empty {
-    padding-top: 18px;
-    color: #666;
-    text-align: center;
 }
 
 .game-player-sidebar {

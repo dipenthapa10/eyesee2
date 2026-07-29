@@ -2,9 +2,9 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faClock, faCopy, faCrown } from '@fortawesome/free-solid-svg-icons'
 import socket from '../socket'
-import { ActivityLog } from './ActivityLog'
+import { ChatBox } from './ChatBox'
 
-export const Lobby = ({ playerName, roomCode, isHost, hostId, players, lobbySettings, activities }) => {
+export const Lobby = ({ playerName, roomCode, isHost, hostId, players, lobbySettings, activities, chatMessages }) => {
     const {
         timer: selectedTimer,
         roundCount: selectedRounds,
@@ -49,6 +49,10 @@ export const Lobby = ({ playerName, roomCode, isHost, hostId, players, lobbySett
         socket.emit('startGame', {
             roomCode
         })
+    }
+
+    const handleChatSend = (text) => {
+        socket.emit('sendChatMessage', { text })
     }
 
     const handleCopyRoomCode = async () => {
@@ -279,7 +283,12 @@ export const Lobby = ({ playerName, roomCode, isHost, hostId, players, lobbySett
             </aside>
 
             <aside className="lobby-empty-sidebar" aria-label="Activity log">
-                <ActivityLog activities={activities} persistentMessage="Waiting for players..." />
+                <ChatBox
+                    activities={activities}
+                    messages={chatMessages}
+                    onSend={handleChatSend}
+                    emptyMessage="Waiting for players..."
+                />
             </aside>
         </div>
     )

@@ -600,7 +600,21 @@ io.on('connection', (socket) => {
         rooms[roomCode].interval = interval
     })
 
+    socket.on('sendChatMessage', (data) => {
+        const roomCode = socket.data.roomCode
+        const room = rooms[roomCode]
+        const player = room?.players.find((player) => player.id === socket.id)
+        const text = String(data?.text || '').trim()
 
+        if (!room || !player || !text) return
+
+        io.to(roomCode).emit('chatMessage', {
+            id: `${socket.id}-${Date.now()}`,
+            name: player.name,
+            text: text.slice(0, 140),
+            timestamp: Date.now()
+        })
+    })
 
 
 })
