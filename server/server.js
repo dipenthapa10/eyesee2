@@ -23,7 +23,7 @@ app.use(express.urlencoded({ extended: true })) // server read from data
 //setup for static folder  ( yet to do)  
 const PORT = 3001
 const rooms = {}
-const ROUND_RESULT_DELAY = 320
+const ROUND_RESULT_DELAY = 900
 const RESULT_SCREEN_DURATION = 15_000
 
 const clearRoundCooldowns = (room) => {
@@ -160,7 +160,7 @@ io.on('connection', (socket) => {
             gameStarted: false,
             phase: 'lobby',
             currentRound: 0,
-            settings: { timer: 0, roundCount: 15, cooldownSeconds: 5, maxPlayers: 2 },
+            settings: { timer: 0, roundCount: 23, cooldownSeconds: 5, maxPlayers: 3 },
             deck: []
         };
 
@@ -329,7 +329,7 @@ io.on('connection', (socket) => {
         const maxPlayers = Number(data.maxPlayers)
 
         if (![0, 5, 10, 15].includes(timer)) return
-        if (!Number.isInteger(roundCount) || (roundCount !== 1 && (roundCount < 10 || roundCount > 20))) return
+        if (!Number.isInteger(roundCount) || (roundCount !== 1 && (roundCount < 10 || roundCount > 30))) return
         if (!Number.isInteger(cooldownSeconds) || cooldownSeconds < 3 || cooldownSeconds > 10) return
         if (!Number.isInteger(maxPlayers) || maxPlayers < 2 || maxPlayers > 10) return
         if (room.players.length > maxPlayers) return
@@ -377,7 +377,7 @@ io.on('connection', (socket) => {
         room.timer = timerDuration
 
         const roundCount = room.settings.roundCount
-        const safeRoundCount = roundCount === 1 ? 1 : Math.min(Math.max(roundCount, 10), 20)
+        const safeRoundCount = roundCount === 1 ? 1 : Math.min(Math.max(roundCount, 10), 30)
         const gameRounds = createRounds(safeRoundCount)
 
         room.roundCount = safeRoundCount

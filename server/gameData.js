@@ -118,8 +118,8 @@ const createRounds = (roundCount) => {
     const shuffledDeck = shuffle(createGameDeck())
 
     return Array.from({ length: roundCount }, (_, roundIndex) => {
-        const center = shuffle(shuffledDeck[roundIndex * 2])
-        const yours = shuffle(shuffledDeck[roundIndex * 2 + 1])
+        const center = shuffle(shuffledDeck[(roundIndex * 2) % shuffledDeck.length])
+        const yours = shuffle(shuffledDeck[(roundIndex * 2 + 1) % shuffledDeck.length])
 
         return {
             center,

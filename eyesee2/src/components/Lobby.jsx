@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faClock, faCopy, faCrown } from '@fortawesome/free-solid-svg-icons'
+import { faClock, faCopy, faCrown, faLink } from '@fortawesome/free-solid-svg-icons'
 import socket from '../socket'
 import { ChatBox } from './ChatBox'
 
@@ -14,9 +14,14 @@ export const Lobby = ({ playerName, roomCode, isHost, hostId, players, lobbySett
     const leaderboardRef = useRef(null)
     const playerPositions = useRef(new Map())
     const copyTimer = useRef(null)
+    const inviteCopyTimer = useRef(null)
     const [copied, setCopied] = useState(false)
+    const [inviteCopied, setInviteCopied] = useState(false)
 
-    useEffect(() => () => clearTimeout(copyTimer.current), [])
+    useEffect(() => () => {
+        clearTimeout(copyTimer.current)
+        clearTimeout(inviteCopyTimer.current)
+    }, [])
 
     const updateSettings = (settings) => {
         socket.emit('updateLobbySettings', {
@@ -65,6 +70,22 @@ export const Lobby = ({ playerName, roomCode, isHost, hostId, players, lobbySett
             copyTimer.current = setTimeout(() => setCopied(false), 1600)
         } catch {
             setCopied(false)
+        }
+    }
+
+    const handleCopyInviteLink = async () => {
+        if (!roomCode) return
+
+        const inviteUrl = new URL(window.location.href)
+        inviteUrl.searchParams.set('room', roomCode)
+
+        try {
+            await navigator.clipboard.writeText(inviteUrl.toString())
+            setInviteCopied(true)
+            clearTimeout(inviteCopyTimer.current)
+            inviteCopyTimer.current = setTimeout(() => setInviteCopied(false), 1600)
+        } catch {
+            setInviteCopied(false)
         }
     }
 
@@ -127,7 +148,17 @@ export const Lobby = ({ playerName, roomCode, isHost, hostId, players, lobbySett
                             >
                                 <FontAwesomeIcon icon={faCopy} />
                             </button>
+                            <button
+                                className="lobby-copy-icon"
+                                onClick={handleCopyInviteLink}
+                                disabled={!roomCode}
+                                title={inviteCopied ? 'Invite link copied!' : 'Copy invite link'}
+                                aria-label="Copy invite link"
+                            >
+                                <FontAwesomeIcon icon={faLink} />
+                            </button>
                             {copied && <span className="lobby-copied-tooltip" role="status">Copied!</span>}
+                            {inviteCopied && <span className="lobby-copied-tooltip" role="status">Invite link copied!</span>}
                         </div>
                     </div>
                     <div className="lobby-setting-row">
@@ -166,6 +197,16 @@ export const Lobby = ({ playerName, roomCode, isHost, hostId, players, lobbySett
                                 <option value={18}>18 rounds</option>
                                 <option value={19}>19 rounds</option>
                                 <option value={20}>20 rounds</option>
+                                <option value={21}>21 rounds</option>
+                                <option value={22}>22 rounds</option>
+                                <option value={23}>23 rounds</option>
+                                <option value={24}>24 rounds</option>
+                                <option value={25}>25 rounds</option>
+                                <option value={26}>26 rounds</option>
+                                <option value={27}>27 rounds</option>
+                                <option value={28}>28 rounds</option>
+                                <option value={29}>29 rounds</option>
+                                <option value={30}>30 rounds</option>
                             </select>
                         ) : (
                             <span>{selectedRounds} rounds</span>

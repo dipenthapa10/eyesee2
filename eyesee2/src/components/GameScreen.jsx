@@ -17,6 +17,8 @@ const characterBySymbol = Object.fromEntries(
     })
 )
 
+const characterImageUrls = Object.values(characterBySymbol)
+
 const cardLayoutCache = new Map()
 
 
@@ -29,6 +31,7 @@ export const GameScreen = ({ rounds, playerName, isHost, hostId, initialPlayers,
     const [displayedRoundIndex, setDisplayedRoundIndex] = useState(0)
     const [cardMotion, setCardMotion] = useState('idle')
     const [gameCountdown, setGameCountdown] = useState(3)
+    const [symbolsReady, setSymbolsReady] = useState(false)
     const [players, setPlayers] = useState(initialPlayers)
     const [winner, setWinner] = useState("")
     const [now, setNow] = useState(() => Date.now())
@@ -37,8 +40,43 @@ export const GameScreen = ({ rounds, playerName, isHost, hostId, initialPlayers,
     const displayedRoundRef = useRef(0)
     const pendingRoundRef = useRef(null)
     const cardMotionTimerRef = useRef(null)
+    const roundSafetyTimerRef = useRef(null)
 
     useEffect(() => {
+        let cancelled = false
+
+        const preloadSymbols = async () => {
+            await Promise.all(characterImageUrls.map((imageUrl) => new Promise((resolve) => {
+                const image = new Image()
+                const finish = () => resolve()
+
+                image.onload = () => {
+                    if (image.decode) {
+                        image.decode().catch(() => undefined).finally(finish)
+                        return
+                    }
+
+                    finish()
+                }
+                image.onerror = finish
+                image.src = imageUrl
+
+                if (image.complete) finish()
+            })))
+
+            if (!cancelled) setSymbolsReady(true)
+        }
+
+        preloadSymbols()
+
+        return () => {
+            cancelled = true
+        }
+    }, [])
+
+    useEffect(() => {
+        if (!symbolsReady) return undefined
+
         const countdownTimer = setInterval(() => {
             setGameCountdown(currentCount => {
                 if (currentCount <= 1) {
@@ -51,7 +89,7 @@ export const GameScreen = ({ rounds, playerName, isHost, hostId, initialPlayers,
         }, 1000)
 
         return () => clearInterval(countdownTimer)
-    }, [])
+    }, [symbolsReady])
 
 
 
@@ -63,18 +101,20 @@ export const GameScreen = ({ rounds, playerName, isHost, hostId, initialPlayers,
             clearTimeout(cardMotionTimerRef.current)
             cardMotionTimerRef.current = null
         }
+        const clearRoundSafetyTimer = () => {
+            clearTimeout(roundSafetyTimerRef.current)
+            roundSafetyTimerRef.current = null
+        }
 
         const showNewRound = (nextRoundIndex) => {
             if (pendingRoundRef.current === nextRoundIndex) return
 
             if (displayedRoundRef.current === nextRoundIndex) {
-                clearCardMotionTimer()
-                setCardMotion('idle')
-                setRoundLocked(false)
                 return
             }
 
             clearCardMotionTimer()
+            clearRoundSafetyTimer()
             pendingRoundRef.current = nextRoundIndex
             setRoundLocked(true)
             setCardMotion('leaving')
@@ -84,9 +124,13 @@ export const GameScreen = ({ rounds, playerName, isHost, hostId, initialPlayers,
                 pendingRoundRef.current = null
                 setDisplayedRoundIndex(nextRoundIndex)
                 setCardMotion('idle')
-                setRoundLocked(false)
                 cardMotionTimerRef.current = null
-            }, 60)
+
+                roundSafetyTimerRef.current = setTimeout(() => {
+                    setRoundLocked(false)
+                    roundSafetyTimerRef.current = null
+                }, 300)
+            }, 130)
         }
 
 
@@ -114,6 +158,7 @@ export const GameScreen = ({ rounds, playerName, isHost, hostId, initialPlayers,
 
         socket.on('gameRestarted', (data) => {
             clearCardMotionTimer()
+            clearRoundSafetyTimer()
             pendingRoundRef.current = null
             displayedRoundRef.current = 0
             setDisplayedRoundIndex(0)
@@ -152,6 +197,7 @@ export const GameScreen = ({ rounds, playerName, isHost, hostId, initialPlayers,
             socket.off('matchDone')
             clearInterval(countdownInterval)
             clearCardMotionTimer()
+            clearRoundSafetyTimer()
 
         }
 
@@ -159,6 +205,7 @@ export const GameScreen = ({ rounds, playerName, isHost, hostId, initialPlayers,
     }, [])
 
     const currentRound = rounds[displayedRoundIndex]
+    const startOverlayVisible = gameCountdown > 0 || !symbolsReady
     const sortedPlayers = [...players].sort((firstPlayer, secondPlayer) => {
         const connectionOrder = Number(firstPlayer.connected === false) - Number(secondPlayer.connected === false)
         if (connectionOrder !== 0) return connectionOrder
@@ -199,7 +246,7 @@ export const GameScreen = ({ rounds, playerName, isHost, hostId, initialPlayers,
     const cooldownRemaining = Math.max(0, Math.ceil(((localPlayer?.cooldownUntil || 0) - now) / 1000))
 
     const handleClick = (symbol) => {
-        if (gameCountdown > 0 || roundLocked || cooldownRemaining > 0) return
+        if (gameOver || startOverlayVisible || roundLocked || cooldownRemaining > 0) return
 
         if (symbol === currentRound.match) {
             setScore(score + 1)
@@ -437,13 +484,13 @@ export const GameScreen = ({ rounds, playerName, isHost, hostId, initialPlayers,
                 {playerList}
             </aside>
             <main className="game-main">
-                {gameCountdown > 0 && !gameOver && (
+                {symbolsReady && gameCountdown > 0 && !gameOver && (
                     <div className="round-countdown" aria-live="assertive">
                         <span>{gameCountdown}</span>
                     </div>
                 )}
                 {!gameOver && (
-                    <div className={`game-cards-area ${gameCountdown > 0 ? 'cards-countdown' : ''}`}>
+                    <div className={`game-cards-area ${startOverlayVisible ? 'cards-countdown' : ''}`}>
                         <div className={`card ${cardMotion === 'leaving' ? 'card-leave' : 'card-enter'}`} key={`center-${displayedRoundIndex}`}>
                             {centerCard.map((symbol, index) => (
                                 <span

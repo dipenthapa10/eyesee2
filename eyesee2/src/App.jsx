@@ -5,6 +5,14 @@ import { GameScreen } from "./components/GameScreen"
 import socket from "./socket"
 import "./App.css"
 
+const updateRoomUrl = (roomCode) => {
+  if (!roomCode) return
+
+  const url = new URL(window.location.href)
+  url.searchParams.set("room", roomCode)
+  window.history.replaceState({}, "", url)
+}
+
 function App() {
   const [screen, setScreen] = useState("home")
   const [playerName, setPlayerName] = useState("")
@@ -15,7 +23,7 @@ function App() {
   const [isHost, setIsHost] = useState(false)
   const [hostId, setHostId] = useState("")
   const [players, setPlayers] = useState([])
-  const [lobbySettings, setLobbySettings] = useState({ timer: 0, roundCount: 15, cooldownSeconds: 5, maxPlayers: 2 })
+  const [lobbySettings, setLobbySettings] = useState({ timer: 0, roundCount: 23, cooldownSeconds: 5, maxPlayers: 3 })
   const [activities, setActivities] = useState([])
   const [chatMessages, setChatMessages] = useState([])
   const [joinError, setJoinError] = useState("")
@@ -32,6 +40,7 @@ function App() {
 
   useEffect(() => {
     socket.on("roomCreated", (data) => {
+      updateRoomUrl(data.roomCode)
       setRoomCode(data.roomCode)
       setPlayers(data.players)
       setHostId(data.hostId)
@@ -44,6 +53,7 @@ function App() {
     })
 
     socket.on("playerJoined", (data) => {
+      updateRoomUrl(data.roomCode)
       setRoomCode(data.roomCode)
       setPlayers(data.players)
       setHostId(data.hostId)
@@ -59,6 +69,10 @@ function App() {
       setScreen("game")
     })
 
+    socket.on("gameOver", () => {
+      setChatMessages([])
+    })
+
     socket.on("gameRestarted", (data) => {
       setRounds(data.rounds)
       setTimer(data.timer)
@@ -72,6 +86,7 @@ function App() {
       setIsHost(data.hostId === socket.id)
       setLobbySettings(data.settings)
       setActivities([])
+      setChatMessages([])
       setScreen("lobby")
     })
 
@@ -115,6 +130,7 @@ function App() {
       socket.off("roomCreated")
       socket.off("playerJoined")
       socket.off("gameStarted")
+      socket.off("gameOver")
       socket.off("gameRestarted")
       socket.off("returnedToLobby")
       socket.off("hostDisconnected")

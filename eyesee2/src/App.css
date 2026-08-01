@@ -13,13 +13,19 @@ body {
 /* Home Screen */
 .home-page {
     min-height: 100vh;
-    background: white;
+    background-color: #fff;
+    background-image:
+        linear-gradient(rgba(255, 255, 255, 0.86), rgba(255, 255, 255, 0.86)),
+        url('./assets/doddlepic.svg');
+    background-position: center;
+    background-repeat: no-repeat, repeat;
+    background-size: 100% 100%, 520px auto;
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
-    padding: 48px 40px;
-    gap: 24px;
+    justify-content: flex-start;
+    padding: 0px 20px;
+    gap: 10px;
 }
 
 .home-logo {
@@ -32,9 +38,10 @@ body {
 }
 
 .home-game-mark {
-    width: 88px;
-    height: 88px;
-    margin-bottom: -16px;
+    width: 400px;
+    height: 400px;
+    margin-top: -26px;
+    margin-bottom: -150px;
     object-fit: contain;
 }
 
@@ -42,7 +49,7 @@ body {
     color: #000000;
     font-size: 15px;
     font-weight: 600;
-    margin-top: -12px;
+    margin-top: 0px;
     text-align: center;
 }
 
@@ -459,27 +466,31 @@ input::placeholder {
 }
 
 .game-over-box {
-    flex: 1;
-    position: relative;
+    position: absolute;
+    inset: 0;
+    z-index: 4;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     gap: 16px;
-    padding: 12px 0;
+    padding: 24px;
     overflow-y: auto;
     font-family: 'Happy Monkey', cursive;
+    background: rgba(39, 43, 56, 0.7);
+    backdrop-filter: none;
+    color: #fff;
 }
 
 .final-podium {
     width: min(480px, 100%);
     text-align: center;
-    color: #111;
+    color: #fff;
 }
 
 .final-podium-label {
     margin: 0 0 3px;
-    color: #666;
+    color: #e1e1e1;
     font-size: 12px;
     letter-spacing: 1px;
     text-transform: uppercase;
@@ -516,6 +527,7 @@ input::placeholder {
     border: 3px solid #222;
     border-radius: 50%;
     background: #fff;
+    color: #111;
     font-size: 22px;
 }
 
@@ -525,6 +537,7 @@ input::placeholder {
     text-overflow: ellipsis;
     white-space: nowrap;
     font-size: 14px;
+    color: #fff;
 }
 
 .podium-step {
@@ -537,6 +550,7 @@ input::placeholder {
     justify-content: center;
     border: 3px solid #222;
     background: #e8e8e8;
+    color: #111;
 }
 
 .podium-step span {
@@ -549,13 +563,13 @@ input::placeholder {
 }
 
 .podium-place-1 .podium-letter {
-    border-color: #b98500;
-    background: #fff1a8;
+    border-color: #222;
+    background: #fff;
 }
 
 .podium-place-1 .podium-step {
     height: 118px;
-    background: #fff1a8;
+    background: #e8e8e8;
 }
 
 .podium-place-2 .podium-step {
@@ -678,30 +692,32 @@ input::placeholder {
 }
 
 .card-enter {
-    animation: card-enter 80ms ease-out both;
+    animation: card-enter 180ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    transform-origin: center;
 }
 
 .card-leave {
     pointer-events: none;
-    animation: card-leave 60ms ease-in both;
+    animation: card-leave 130ms ease-in both;
+    transform-origin: center;
 }
 
 @keyframes card-enter {
     from {
-        opacity: 0.7;
-        transform: scale(0.985);
+        opacity: 0.2;
+        transform: translateY(8px) scale(0.92) rotate(-3deg);
     }
 
     to {
         opacity: 1;
-        transform: scale(1);
+        transform: translateY(0) scale(1) rotate(0deg);
     }
 }
 
 @keyframes card-leave {
     to {
-        opacity: 0.25;
-        transform: scale(0.985);
+        opacity: 0;
+        transform: translateY(-5px) scale(0.94) rotate(3deg);
     }
 }
 
@@ -757,7 +773,13 @@ input::placeholder {
     display: flex;
     flex-direction: column;
     gap: clamp(10px, 2vh, 18px);
-    background: radial-gradient(circle at 50% 45%, #ffffff 0%, #f0f1f2 78%);
+    background-color: #f4f5f6;
+    background-image:
+        linear-gradient(rgba(244, 245, 246, 0.76), rgba(244, 245, 246, 0.76)),
+        url('./assets/doddlepic.svg');
+    background-position: center, center;
+    background-repeat: no-repeat, repeat;
+    background-size: 100% 100%, 430px auto;
 }
 
 .round-countdown {
@@ -888,16 +910,19 @@ input::placeholder {
 .activity-correct {
     background: #dcffc8;
     color: #37b820;
+    font-weight: bold;
 }
 
 .activity-wrong {
     background: #ffe1e1;
     color: #d23535;
+    font-weight: bold;
 }
 
 .activity-notice {
     background: #e6eef8;
     color: #2d63a5;
+    font-weight: bold;
 }
 
 .game-player-sidebar {
@@ -977,7 +1002,13 @@ input::placeholder {
     display: flex;
     flex-direction: column;
     gap: clamp(10px, 2vh, 18px);
-    background: radial-gradient(circle at 50% 45%, #ffffff 0%, #f5f5f5 72%);
+    background-color: #f4f5f6;
+    background-image:
+        linear-gradient(rgba(244, 245, 246, 0.76), rgba(244, 245, 246, 0.76)),
+        url('./assets/doddlepic.svg');
+    background-position: center, center;
+    background-repeat: no-repeat, round;
+    background-size: 100% 100%, 430px auto;
 }
 
 .lobby-player-sidebar,

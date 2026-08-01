@@ -3,7 +3,8 @@ import socket from '../socket'
 import gameLogo from '../assets/logo.png'
 
 export const HomeScreen = ({ setPlayerName, playerName, setRoomCode, joinError, clearJoinError }) => {
-    const [roomCodeLocal, setRoomCodeLocal] = useState("")
+    const sharedRoomCode = new URLSearchParams(window.location.search).get('room')?.trim().toUpperCase() || ''
+    const [roomCodeLocal, setRoomCodeLocal] = useState(() => sharedRoomCode)
 
     const handleCreateRoom = () => {
         if (!playerName || playerName.trim() === "") {
@@ -24,9 +25,10 @@ export const HomeScreen = ({ setPlayerName, playerName, setRoomCode, joinError, 
             alert("please enter a room code!")
             return
         }
-        setRoomCode(roomCodeLocal)
+        const roomCode = roomCodeLocal.trim().toUpperCase()
+        setRoomCode(roomCode)
         clearJoinError()
-        socket.emit('joinRoom', { playerName, roomCode: roomCodeLocal })
+        socket.emit('joinRoom', { playerName, roomCode })
 
     }
 
@@ -34,7 +36,7 @@ export const HomeScreen = ({ setPlayerName, playerName, setRoomCode, joinError, 
         <div className="home-page">
             <img className="home-game-mark" src={gameLogo} alt="EyeSee2 game logo" />
             <h1 className="home-logo">EyeSee2</h1>
-            <p className="home-tagline">spot the match · beat your friends</p>
+            <p className="home-tagline">get your eye to see twoooooooo</p>
 
             <div className="home-card">
 
