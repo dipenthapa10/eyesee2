@@ -282,20 +282,22 @@ export const Lobby = ({ playerName, roomCode, isHost, hostId, players, lobbySett
                             className="leaderboard-row"
                         >
                             <span className="player-rank">#{index + 1}</span>
-                            <div className={`lobby-player-box ${player.connected === false || player.inLobby === false ? 'player-inactive' : ''}`}>
-                                <div className={`lobby-player-avatar ${index === 1 ? 'p2' : ''}`}>
-                                    {player.name[0].toUpperCase()}
-                                </div>
+                                <div className={`lobby-player-box ${player.connected === false || player.inLobby === false ? 'player-inactive' : ''}`}>
+                                    <div className={`lobby-player-avatar ${index === 1 ? 'p2' : ''}`}>
+                                        {player.name[0].toUpperCase()}
+                                        {player.id === hostId && (
+                                            <span className="lobby-host-badge" title="Host">
+                                                <FontAwesomeIcon icon={faCrown} aria-label="Host" />
+                                            </span>
+                                        )}
+                                    </div>
                                 <div className={`lobby-player-info ${player.id === hostId ? 'lobby-host-info' : ''}`}>
                                     {player.id === hostId ? (
                                         <div className="lobby-host-name-row">
-                                            <p className="lobby-player-name">{player.name}</p>
-                                            <span className="lobby-player-badge lobby-host-badge" title="Host">
-                                                <FontAwesomeIcon icon={faCrown} aria-label="Host" />
-                                            </span>
+                                            <p className="lobby-player-name">{player.name}{player.id === socket.id ? ' (You)' : ''}</p>
                                         </div>
                                     ) : (
-                                        <p className="lobby-player-name">{player.name}</p>
+                                        <p className="lobby-player-name">{player.name}{player.id === socket.id ? ' (You)' : ''}</p>
                                     )}
                                     {player.connected === false && <span className="player-status-tag">Left</span>}
                                 </div>
@@ -308,13 +310,13 @@ export const Lobby = ({ playerName, roomCode, isHost, hostId, players, lobbySett
                         <div className="lobby-player-box">
                             <div className="lobby-player-avatar">
                                 {playerName ? playerName[0].toUpperCase() : 'H'}
+                                <span className="lobby-host-badge" title="Host">
+                                    <FontAwesomeIcon icon={faCrown} aria-label="Host" />
+                                </span>
                             </div>
                             <div className="lobby-player-info lobby-host-info">
                                 <div className="lobby-host-name-row">
-                                    <p className="lobby-player-name">{playerName || 'Host'}</p>
-                                    <span className="lobby-player-badge lobby-host-badge" title="Host">
-                                        <FontAwesomeIcon icon={faCrown} aria-label="Host" />
-                                    </span>
+                                    <p className="lobby-player-name">{playerName || 'Host'} (You)</p>
                                 </div>
                                 <p className="lobby-player-sub">room host</p>
                             </div>

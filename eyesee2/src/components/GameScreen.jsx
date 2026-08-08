@@ -425,15 +425,15 @@ export const GameScreen = ({ rounds, playerName, isHost, hostId, initialPlayers,
                         <div className={`lobby-player-box ${p.connected === false ? 'player-inactive' : ''} ${p.cooldownUntil > now ? 'player-cooldown' : ''} ${p.correctUntil > now ? 'player-correct' : ''}`}>
                             <div className={`lobby-player-avatar ${i === 1 ? 'p2' : ''}`}>
                                 {p.name[0].toUpperCase()}
+                                {p.id === hostId && (
+                                    <span className="lobby-host-badge" title="Host">
+                                        <FontAwesomeIcon icon={faCrown} aria-label="Host" />
+                                    </span>
+                                )}
                             </div>
                             <div className="lobby-player-info">
                                 <div className="game-player-name-row">
-                                    <p className="lobby-player-name">{p.name}</p>
-                                    {p.id === hostId && (
-                                        <span className="lobby-host-badge" title="Host">
-                                            <FontAwesomeIcon icon={faCrown} aria-label="Host" />
-                                        </span>
-                                    )}
+                                    <p className="lobby-player-name">{p.name}{p.id === socket.id ? ' (You)' : ''}</p>
                                 </div>
                                 {p.connected === false && <span className="player-status-tag">Left</span>}
                             </div>
@@ -447,15 +447,15 @@ export const GameScreen = ({ rounds, playerName, isHost, hostId, initialPlayers,
                     <div className="lobby-player-box">
                         <div className="lobby-player-avatar">
                             {playerName ? playerName[0].toUpperCase() : 'P'}
+                            {isHost && (
+                                <span className="lobby-host-badge" title="Host">
+                                    <FontAwesomeIcon icon={faCrown} aria-label="Host" />
+                                </span>
+                            )}
                         </div>
                         <div className="lobby-player-info">
                             <div className="game-player-name-row">
-                                <p className="lobby-player-name">{playerName}</p>
-                                {isHost && (
-                                    <span className="lobby-host-badge" title="Host">
-                                        <FontAwesomeIcon icon={faCrown} aria-label="Host" />
-                                    </span>
-                                )}
+                                <p className="lobby-player-name">{playerName} (You)</p>
                             </div>
                         </div>
                         <span className="lobby-player-badge">{score}</span>
