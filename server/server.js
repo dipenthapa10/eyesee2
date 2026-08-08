@@ -21,7 +21,7 @@ app.use(express.json()) //server read json
 app.use(express.urlencoded({ extended: true })) // server read from data
 
 //setup for static folder  ( yet to do)  
-const PORT = 3001
+const PORT = process.env.PORT || 3001
 const rooms = {}
 const ROUND_RESULT_DELAY = 900
 const RESULT_SCREEN_DURATION = 15_000
