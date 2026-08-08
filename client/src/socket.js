@@ -1,6 +1,8 @@
 import { io } from 'socket.io-client'
 
-const socket = io('http://localhost:3001', {
+const serverUrl = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001'
+
+const socket = io(serverUrl, {
     autoConnect: true,
     reconnection: true,
     reconnectionAttempts: 5,
