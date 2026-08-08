@@ -4,19 +4,26 @@ const { Server } = require('socket.io')
 const cors = require('cors')
 
 
+const allowedOrigins = [
+    'http://localhost:5173',
+    process.env.CLIENT_URL
+].filter(Boolean)
 
+const corsOptions = {
+    origin: allowedOrigins,
+    methods: ['GET', 'POST']
+}
 const app = express()
 const server = http.createServer(app)
 const io = new Server(server, {
     cors: {
-        origin: "http://localhost:5173",
-        methods: ["GET", "POST"]
+        cors: corsOptions
     }
 })
 
 
 //middleware
-app.use(cors())
+app.use(cors(corsOptions))
 app.use(express.json()) //server read json
 app.use(express.urlencoded({ extended: true })) // server read from data
 
