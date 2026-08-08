@@ -24,12 +24,12 @@ dist-ssr
 *.sw?
 
 # Dependencies
-/eyesee2/node_modules/
+/client/node_modules/
 /server/node_modules/
 
 # Production builds
-/eyesee2/dist/
-/eyesee2/dist-ssr/
+/client/dist/
+/client/dist-ssr/
 
 # Environment variables
 .env
