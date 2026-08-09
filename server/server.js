@@ -28,8 +28,11 @@ app.use(express.urlencoded({ extended: true })) // server read from data
 //setup for static folder  ( yet to do)  
 const PORT = process.env.PORT || 3001
 const rooms = {}
-const ROUND_RESULT_DELAY = 900
+// Keep the winning match on screen briefly so every player can see it before
+// the next cards become clickable.
+const ROUND_RESULT_DELAY = 1100
 const RESULT_SCREEN_DURATION = 15_000
+const GAME_START_COUNTDOWN_DELAY = 3_000
 
 const clearRoundCooldowns = (room) => {
     room.players.forEach(player => {
@@ -384,7 +387,10 @@ io.on('connection', (socket) => {
         const timerDuration = room.settings.timer
         room.gameStarted = true
         room.phase = 'playing'
-        room.roundLocked = false
+        // Keep the first cards disabled while clients show their 3–2–1 start
+        // countdown. This also prevents the server timer from losing seconds
+        // before players are allowed to click.
+        room.roundLocked = true
         room.currentRound = 0
         room.timerDuration = timerDuration
         room.timer = timerDuration
@@ -404,33 +410,39 @@ io.on('connection', (socket) => {
             roundCount: room.roundCount
         })
 
-        if (timerDuration === 0) return
+        setTimeout(() => {
+            // The room may have ended or been removed during the countdown.
+            if (rooms[roomCode] !== room || room.phase !== 'playing') return
 
-        room.interval = setInterval(() => {
-            room.timer -= 1
+            room.roundLocked = false
+            if (timerDuration === 0) return
 
-            io.to(roomCode).emit('timerTick', {
-                timer: room.timer
-            })
+            room.interval = setInterval(() => {
+                room.timer -= 1
 
-            if (room.timer === 0) {
-                room.currentRound += 1
-
-                if (room.currentRound >= room.rounds.length) {
-                    finishGame(roomCode, room)
-                    return
-                }
-
-                room.timer = room.timerDuration
-                clearRoundCooldowns(room)
-                io.to(roomCode).emit('cooldownUpdated', { players: room.players })
-
-                io.to(roomCode).emit('newRound', {
-                    currentRound: room.currentRound,
+                io.to(roomCode).emit('timerTick', {
                     timer: room.timer
                 })
-            }
-        }, 1000)
+
+                if (room.timer === 0) {
+                    room.currentRound += 1
+
+                    if (room.currentRound >= room.rounds.length) {
+                        finishGame(roomCode, room)
+                        return
+                    }
+
+                    room.timer = room.timerDuration
+                    clearRoundCooldowns(room)
+                    io.to(roomCode).emit('cooldownUpdated', { players: room.players })
+
+                    io.to(roomCode).emit('newRound', {
+                        currentRound: room.currentRound,
+                        timer: room.timer
+                    })
+                }
+            }, 1000)
+        }, GAME_START_COUNTDOWN_DELAY)
     })
 
     socket.on('wrongAnswer', (data) => {
@@ -494,7 +506,8 @@ io.on('connection', (socket) => {
         io.to(roomCode).emit('scoreUpdated', { players: room.players })
         io.to(roomCode).emit('roundWon', {
             winner: player?.name || 'A player',
-            players: room.players
+            players: room.players,
+            match: currentRound.match
         })
         io.to(roomCode).emit('activityUpdate', {
             id: player.id,

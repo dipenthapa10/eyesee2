@@ -1,12 +1,13 @@
 import { useState, useEffect, useLayoutEffect, useRef } from "react"
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faClock, faCrown } from '@fortawesome/free-solid-svg-icons'
+import { faCrown } from '@fortawesome/free-solid-svg-icons'
 import socket from "../socket";
 import { ChatBox } from './ChatBox'
 import { Results } from './Results'
+import clockIcon from '../assets/clock.svg'
 
 const characterFiles = import.meta.glob(
-    '../assets/characters-cropped/Slice *.svg',
+    '../assets/characters/Slice *.svg',
     { eager: true, query: '?url', import: 'default' }
 )
 
@@ -28,6 +29,7 @@ export const GameScreen = ({ rounds, playerName, isHost, hostId, initialPlayers,
     const [timer, setTimer] = useState(initialTimer)
     const [timerDuration, setTimerDuration] = useState(initialTimerDuration)
     const [roundLocked, setRoundLocked] = useState(false)
+    const [revealedMatch, setRevealedMatch] = useState(null)
     const [displayedRoundIndex, setDisplayedRoundIndex] = useState(0)
     const [cardMotion, setCardMotion] = useState('idle')
     const [gameCountdown, setGameCountdown] = useState(3)
@@ -117,6 +119,7 @@ export const GameScreen = ({ rounds, playerName, isHost, hostId, initialPlayers,
             clearRoundSafetyTimer()
             pendingRoundRef.current = nextRoundIndex
             setRoundLocked(true)
+            setRevealedMatch(null)
             setCardMotion('leaving')
 
             cardMotionTimerRef.current = setTimeout(() => {
@@ -146,6 +149,7 @@ export const GameScreen = ({ rounds, playerName, isHost, hostId, initialPlayers,
         socket.on('roundWon', (data) => {
             setPlayers(data.players)
             setRoundLocked(true)
+            setRevealedMatch(data.match || null)
         })
 
         // listen for game over from server
@@ -165,6 +169,7 @@ export const GameScreen = ({ rounds, playerName, isHost, hostId, initialPlayers,
             setCardMotion('idle')
             setScore(0)
             setGameOver(false)
+            setRevealedMatch(null)
             setTimer(data.timer)
             setTimerDuration(data.timerDuration)
             setWinner("")
@@ -476,10 +481,12 @@ export const GameScreen = ({ rounds, playerName, isHost, hostId, initialPlayers,
         <div className="game-page">
             <header className="game-hud app-hud">
                 <p className="lobby-logo">EyeSee2</p>
-                <span>Round: {displayedRoundIndex + 1} / {rounds.length}</span>
-                <span>
-                    <FontAwesomeIcon className="timer-icon" icon={faClock} />
-                    {timerDuration === 0 ? 'No Limit' : timer}
+                <span className="round-display">Round: {displayedRoundIndex + 1} / {rounds.length}</span>
+                <span className="timer-display" aria-label={`Timer: ${timerDuration === 0 ? 'No Limit' : timer}`}>
+                    <span className="timer-clock">
+                        <img className="timer-icon" src={clockIcon} alt="" />
+                        <span className="timer-clock-value">{timerDuration === 0 ? '∞' : timer}</span>
+                    </span>
                 </span>
             </header>
             <aside className="game-player-sidebar">
@@ -492,11 +499,11 @@ export const GameScreen = ({ rounds, playerName, isHost, hostId, initialPlayers,
                     </div>
                 )}
                 {!gameOver && (
-                    <div className={`game-cards-area ${startOverlayVisible ? 'cards-countdown' : ''}`}>
+                    <div className={`game-cards-area ${startOverlayVisible ? 'cards-countdown' : ''} ${revealedMatch ? 'result-reveal' : ''}`}>
                         <div className={`card ${cardMotion === 'leaving' ? 'card-leave' : 'card-enter'}`} key={`center-${displayedRoundIndex}`}>
                             {centerCard.map((symbol, index) => (
                                 <span
-                                    className="symbol"
+                                    className={`symbol ${symbol === revealedMatch ? 'is-match' : ''}`}
                                     key={symbol}
                                     style={getSymbolStyle(index, centerCard.join(''))}
                                     onClick={() => handleClick(symbol)}
@@ -514,7 +521,7 @@ export const GameScreen = ({ rounds, playerName, isHost, hostId, initialPlayers,
                         <div className={`card your-card ${cardMotion === 'leaving' ? 'card-leave' : 'card-enter'}`} key={`yours-${displayedRoundIndex}`}>
                             {yourCard.map((symbol, index) => (
                                 <span
-                                    className="symbol"
+                                    className={`symbol ${symbol === revealedMatch ? 'is-match' : ''}`}
                                     key={symbol}
                                     style={getSymbolStyle(index, yourCard.join(''))}
                                     onClick={() => handleClick(symbol)}

@@ -1,8 +1,9 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faClock, faCopy, faCrown, faLink } from '@fortawesome/free-solid-svg-icons'
+import { faCopy, faCrown, faLink } from '@fortawesome/free-solid-svg-icons'
 import socket from '../socket'
 import { ChatBox } from './ChatBox'
+import clockIcon from '../assets/clock.svg'
 
 export const Lobby = ({ playerName, roomCode, isHost, hostId, players, lobbySettings, activities, chatMessages }) => {
     const {
@@ -125,10 +126,12 @@ export const Lobby = ({ playerName, roomCode, isHost, hostId, players, lobbySett
         <div className="lobby-page lobby-layout">
             <header className="lobby-hud app-hud">
                 <p className="lobby-logo">EyeSee2</p>
-                <span>Rounds: {selectedRounds}</span>
-                <span>
-                    <FontAwesomeIcon className="timer-icon" icon={faClock} />
-                    {selectedTimer === 0 ? 'No Limit' : selectedTimer}
+                <span className="round-display">Rounds: {selectedRounds}</span>
+                <span className="timer-display" aria-label={`Timer: ${selectedTimer === 0 ? 'No Limit' : selectedTimer}`}>
+                    <span className="timer-clock">
+                        <img className="timer-icon" src={clockIcon} alt="" />
+                        <span className="timer-clock-value">{selectedTimer === 0 ? '∞' : selectedTimer}</span>
+                    </span>
                 </span>
             </header>
 
