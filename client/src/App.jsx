@@ -5,11 +5,11 @@ import { GameScreen } from "./components/GameScreen"
 import socket from "./socket"
 import "./App.css"
 
-const updateRoomUrl = (roomCode) => {
-  if (!roomCode) return
-
+const clearRoomUrl = () => {
   const url = new URL(window.location.href)
-  url.searchParams.set("room", roomCode)
+  if (!url.searchParams.has("room")) return
+
+  url.searchParams.delete("room")
   window.history.replaceState({}, "", url)
 }
 
@@ -40,7 +40,7 @@ function App() {
 
   useEffect(() => {
     socket.on("roomCreated", (data) => {
-      updateRoomUrl(data.roomCode)
+      clearRoomUrl()
       setRoomCode(data.roomCode)
       setPlayers(data.players)
       setHostId(data.hostId)
@@ -53,7 +53,7 @@ function App() {
     })
 
     socket.on("playerJoined", (data) => {
-      updateRoomUrl(data.roomCode)
+      clearRoomUrl()
       setRoomCode(data.roomCode)
       setPlayers(data.players)
       setHostId(data.hostId)

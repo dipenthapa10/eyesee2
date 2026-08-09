@@ -294,10 +294,14 @@ export const Lobby = ({ playerName, roomCode, isHost, hostId, players, lobbySett
                                 <div className={`lobby-player-info ${player.id === hostId ? 'lobby-host-info' : ''}`}>
                                     {player.id === hostId ? (
                                         <div className="lobby-host-name-row">
-                                            <p className="lobby-player-name">{player.name}{player.id === socket.id ? ' (You)' : ''}</p>
+                                            <p className="lobby-player-name">
+                                                {player.name}{player.id === socket.id && <span className="player-you-label"> (You)</span>}
+                                            </p>
                                         </div>
                                     ) : (
-                                        <p className="lobby-player-name">{player.name}{player.id === socket.id ? ' (You)' : ''}</p>
+                                        <p className="lobby-player-name">
+                                            {player.name}{player.id === socket.id && <span className="player-you-label"> (You)</span>}
+                                        </p>
                                     )}
                                     {player.connected === false && <span className="player-status-tag">Left</span>}
                                 </div>
@@ -316,7 +320,7 @@ export const Lobby = ({ playerName, roomCode, isHost, hostId, players, lobbySett
                             </div>
                             <div className="lobby-player-info lobby-host-info">
                                 <div className="lobby-host-name-row">
-                                    <p className="lobby-player-name">{playerName || 'Host'} (You)</p>
+                                    <p className="lobby-player-name">{playerName || 'Host'}<span className="player-you-label"> (You)</span></p>
                                 </div>
                                 <p className="lobby-player-sub">room host</p>
                             </div>

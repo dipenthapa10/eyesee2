@@ -49,7 +49,6 @@ export const HomeScreen = ({ setPlayerName, playerName, setRoomCode, joinError, 
                     />
                 </div>
 
-                <hr className="home-divider" />
 
                 <div>
 

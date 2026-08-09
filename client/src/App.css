@@ -15,7 +15,7 @@ body {
     min-height: 100vh;
     background-color: #fff;
     background-image:
-        linear-gradient(rgba(255, 255, 255, 0.86), rgba(255, 255, 255, 0.86)),
+        linear-gradient(rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.9)),
         url('./assets/doddlepic.svg');
     background-position: center;
     background-repeat: no-repeat, repeat;
@@ -40,7 +40,7 @@ body {
 .home-game-mark {
     width: 400px;
     height: 400px;
-    margin-top: -26px;
+    margin-top: -110px;
     margin-bottom: -150px;
     object-fit: contain;
 }
@@ -54,9 +54,9 @@ body {
 }
 
 .home-card {
-    background: white;
-    border-radius: 20px;
-    border: 2px solid #EEF2FF;
+    background: rgba(255, 255, 255, 0.75);
+    border-radius: 10px;
+    border: 2px solid #000000;
     padding: 28px 32px;
     width: 100%;
     max-width: 400px;
@@ -74,7 +74,7 @@ input::placeholder {
 .home-input {
     width: 100%;
     padding: 12px 16px;
-    border: 2px solid #EEF2FF;
+    border: 2px solid #000000;
     border-radius: 12px;
     font-family: 'Nunito', sans-serif;
     font-size: 14px;
@@ -88,10 +88,7 @@ input::placeholder {
     border-color: #000000;
 }
 
-.home-divider {
-    border: none;
-    border-top: 2px solid #EEF2FF;
-}
+
 
 .join-row {
     display: flex;
@@ -361,6 +358,7 @@ input::placeholder {
 
 .lobby-player-info {
     flex: 1;
+    min-width: 0;
 }
 
 .lobby-host-info {
@@ -379,6 +377,7 @@ input::placeholder {
     display: flex;
     align-items: center;
     gap: 6px;
+    min-width: 0;
 }
 
 .lobby-host-badge {
@@ -457,6 +456,33 @@ input::placeholder {
     font-family: 'Happy Monkey', cursive;
     font-size: 16px;
     color: #111;
+    min-width: 0;
+    overflow: visible;
+    text-overflow: clip;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    line-height: 1.1;
+}
+
+.player-you-label {
+    display: inline;
+}
+
+/* Keep the score readable when the sidebars become narrow on smaller windows. */
+@media (max-width: 1100px) {
+    .game-player-list .lobby-player-name:has(.player-you-label),
+    .lobby-player-sidebar .lobby-player-name:has(.player-you-label) {
+        overflow: visible;
+        text-overflow: clip;
+        white-space: normal;
+        line-height: 1.05;
+    }
+
+    .player-you-label {
+        display: block;
+        margin-top: 2px;
+        font-size: 10px;
+    }
 }
 
 
@@ -784,7 +810,7 @@ input::placeholder {
     gap: clamp(10px, 2vh, 18px);
     background-color: #f4f5f6;
     background-image:
-        linear-gradient(rgba(244, 245, 246, 0.76), rgba(244, 245, 246, 0.76)),
+        linear-gradient(rgba(244, 245, 246, 0.9), rgba(244, 245, 246, 0.9)),
         url('./assets/doddlepic.svg');
     background-position: center, center;
     background-repeat: no-repeat, repeat;
@@ -968,12 +994,15 @@ input::placeholder {
 }
 
 .game-player-list .lobby-player-badge {
-    padding: 3px 7px;
-    border: 1px solid #ddd;
-    border-radius: 20px;
-    background: #f0f0f0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
     color: #111;
-    font-size: 11px;
+    font-size: 13px;
+    font-weight: bold;
+    white-space: nowrap;
+    flex: 0 0 auto;
 }
 
 /* Lobby uses the same header + left/center/right structure as the game. */
@@ -1011,13 +1040,13 @@ input::placeholder {
     display: flex;
     flex-direction: column;
     gap: clamp(10px, 2vh, 18px);
-    background-color: #f4f5f6;
+    background-color: #fff;
     background-image:
-        linear-gradient(rgba(244, 245, 246, 0.76), rgba(244, 245, 246, 0.76)),
+        linear-gradient(rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.9)),
         url('./assets/doddlepic.svg');
-    background-position: center, center;
-    background-repeat: no-repeat, round;
-    background-size: 100% 100%, 430px auto;
+    background-position: center;
+    background-repeat: no-repeat, repeat;
+    background-size: 100% 100%, 520px auto;
 }
 
 .lobby-player-sidebar,
@@ -1084,7 +1113,7 @@ input::placeholder {
 @media (max-width: 780px) {
     .game-page {
         grid-template-columns: 1fr;
-        grid-template-rows: auto auto minmax(0, 1fr) auto;
+        grid-template-rows: auto auto minmax(0, 1fr) clamp(120px, 18dvh, 150px);
     }
 
     .game-hud,
@@ -1117,10 +1146,45 @@ input::placeholder {
     .game-player-sidebar {
         border-right: 0;
         border-bottom: 2px solid #222;
+        max-height: 104px;
+        padding: 8px;
+        overflow-x: auto;
+        overflow-y: hidden;
     }
 
     .game-player-list .leaderboard-row {
-        flex: 1;
+        flex: 0 0 146px;
+        grid-template-columns: 25px minmax(0, 1fr);
+        gap: 4px;
+        scroll-snap-align: start;
+    }
+
+    .game-sidebar {
+        height: 100%;
+        min-height: 0;
+    }
+
+    .game-sidebar .chat-box {
+        height: calc(100% - 8px);
+        min-height: 0;
+    }
+
+    .chat-message-list {
+        min-height: 0;
+        overscroll-behavior: contain;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .app-hud {
+        grid-template-columns: 1fr auto;
+        gap: 5px 14px;
+        min-height: 0;
+        padding: 8px 12px;
+    }
+
+    .app-hud .lobby-logo {
+        grid-column: 1 / -1;
+        font-size: 27px;
     }
 
     .lobby-layout {
@@ -1144,10 +1208,55 @@ input::placeholder {
         flex-direction: row;
         border-right: 0;
         border-bottom: 2px solid #222;
+        max-height: 88px;
+        padding: 8px;
+        overflow-x: auto;
+        overflow-y: hidden;
+        scroll-snap-type: x proximity;
     }
 
     .lobby-player-sidebar .leaderboard-row {
-        flex: 1;
+        flex: 0 0 146px;
+        grid-template-columns: 25px minmax(0, 1fr);
+        gap: 4px;
+        scroll-snap-align: start;
+    }
+
+    .game-player-list .lobby-player-box,
+    .lobby-player-sidebar .lobby-player-box {
+        padding: 7px 8px;
+        gap: 7px;
+    }
+
+    .game-player-list .lobby-player-avatar,
+    .lobby-player-sidebar .lobby-player-avatar {
+        width: 30px;
+        height: 30px;
+        font-size: 13px;
+    }
+
+    .game-player-list .lobby-player-name,
+    .lobby-player-sidebar .lobby-player-name {
+        min-width: 0;
+        overflow: visible;
+        text-overflow: clip;
+        white-space: normal;
+        overflow-wrap: anywhere;
+        font-size: 13px;
+    }
+
+    .game-player-list .lobby-player-name:has(.player-you-label),
+    .lobby-player-sidebar .lobby-player-name:has(.player-you-label) {
+        overflow: visible;
+        text-overflow: clip;
+        white-space: normal;
+        line-height: 1.05;
+    }
+
+    .player-you-label {
+        display: block;
+        margin-top: 2px;
+        font-size: 10px;
     }
 
     .lobby-main {
@@ -1157,5 +1266,61 @@ input::placeholder {
     .lobby-empty-sidebar {
         grid-row: 4;
         display: none;
+    }
+}
+
+@media (max-width: 780px) and (orientation: portrait) {
+    .game-main .game-cards-area {
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        gap: clamp(8px, 1.5dvh, 14px);
+    }
+
+    .game-main .card {
+        width: clamp(135px, min(74vw, 23dvh), 250px);
+    }
+}
+
+@media (max-width: 520px) {
+    .home-page {
+        padding: clamp(56px, 9dvh, 86px) 12px 22px;
+        gap: 5px;
+    }
+
+    .home-game-mark {
+        width: 300px;
+        height: 300px;
+        margin-top: -78px;
+        margin-bottom: -108px;
+    }
+
+    .home-logo {
+        font-size: 50px;
+    }
+
+    .home-tagline {
+        font-size: 13px;
+    }
+
+    .home-card {
+        max-width: 360px;
+        padding: 18px 20px;
+        gap: 10px;
+    }
+
+    .home-input {
+        padding: 10px 12px;
+        font-size: 14px;
+    }
+
+    .btn-join {
+        padding: 10px 16px;
+        font-size: 16px;
+    }
+
+    .btn-create {
+        padding: 12px;
+        font-size: 19px;
     }
 }

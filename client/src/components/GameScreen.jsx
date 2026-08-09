@@ -433,7 +433,9 @@ export const GameScreen = ({ rounds, playerName, isHost, hostId, initialPlayers,
                             </div>
                             <div className="lobby-player-info">
                                 <div className="game-player-name-row">
-                                    <p className="lobby-player-name">{p.name}{p.id === socket.id ? ' (You)' : ''}</p>
+                                    <p className="lobby-player-name">
+                                        {p.name}{p.id === socket.id && <span className="player-you-label"> (You)</span>}
+                                    </p>
                                 </div>
                                 {p.connected === false && <span className="player-status-tag">Left</span>}
                             </div>
@@ -455,7 +457,7 @@ export const GameScreen = ({ rounds, playerName, isHost, hostId, initialPlayers,
                         </div>
                         <div className="lobby-player-info">
                             <div className="game-player-name-row">
-                                <p className="lobby-player-name">{playerName} (You)</p>
+                                <p className="lobby-player-name">{playerName}<span className="player-you-label"> (You)</span></p>
                             </div>
                         </div>
                         <span className="lobby-player-badge">{score}</span>

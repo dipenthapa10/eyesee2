@@ -180,6 +180,14 @@ io.on('connection', (socket) => {
             settings: rooms[roomCode].settings
 
         })
+
+        io.to(roomCode).emit('activityUpdate', {
+            id: socket.id,
+            name: rooms[roomCode].players[0].name,
+            type: 'notice',
+            message: 'is now the room owner.',
+            timestamp: Date.now()
+        })
     })
 
     socket.on('joinRoom', (data) => {
