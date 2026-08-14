@@ -829,6 +829,9 @@ input::placeholder {
 }
 
 .lobby-select {
+    margin-left: auto;
+    width: 140px;
+    box-sizing: border-box;
     padding: 6px 10px;
     border: 2px solid #222;
     border-radius: 8px;

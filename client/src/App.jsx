@@ -23,7 +23,7 @@ function App() {
   const [isHost, setIsHost] = useState(false)
   const [hostId, setHostId] = useState("")
   const [players, setPlayers] = useState([])
-  const [lobbySettings, setLobbySettings] = useState({ timer: 0, roundCount: 23, cooldownSeconds: 5, maxPlayers: 3 })
+  const [lobbySettings, setLobbySettings] = useState({ timer: 0, roundCount: 23, cooldownSeconds: 5, maxPlayers: 4 })
   const [activities, setActivities] = useState([])
   const [chatMessages, setChatMessages] = useState([])
   const [joinError, setJoinError] = useState("")

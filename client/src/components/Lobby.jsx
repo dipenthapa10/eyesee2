@@ -188,28 +188,10 @@ export const Lobby = ({ playerName, roomCode, isHost, hostId, players, lobbySett
                                 value={selectedRounds}
                                 onChange={(e) => handleRoundsChange(Number(e.target.value))}
                             >
-                                <option value={1}>1 round</option>
-                                <option value={10}>10 rounds</option>
-                                <option value={11}>11 rounds</option>
-                                <option value={12}>12 rounds</option>
-                                <option value={13}>13 rounds</option>
-                                <option value={14}>14 rounds</option>
-                                <option value={15}>15 rounds</option>
-                                <option value={16}>16 rounds</option>
-                                <option value={17}>17 rounds</option>
-                                <option value={18}>18 rounds</option>
-                                <option value={19}>19 rounds</option>
-                                <option value={20}>20 rounds</option>
-                                <option value={21}>21 rounds</option>
-                                <option value={22}>22 rounds</option>
-                                <option value={23}>23 rounds</option>
-                                <option value={24}>24 rounds</option>
-                                <option value={25}>25 rounds</option>
-                                <option value={26}>26 rounds</option>
-                                <option value={27}>27 rounds</option>
-                                <option value={28}>28 rounds</option>
-                                <option value={29}>29 rounds</option>
-                                <option value={30}>30 rounds</option>
+                                <option value={1}>1 round (test)</option>
+                                {Array.from({ length: 26 }, (_, index) => index + 15).map(roundCount => (
+                                    <option key={roundCount} value={roundCount}>{roundCount} rounds</option>
+                                ))}
                             </select>
                         ) : (
                             <span>{selectedRounds} rounds</span>
