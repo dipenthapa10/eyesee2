@@ -292,7 +292,7 @@ input::placeholder {
 }
 
 /* Keep every setting value lined up on the same right edge. */
-.lobby-setting-row > :last-child {
+.lobby-setting-row> :last-child {
     margin-left: auto;
     text-align: right;
 }
@@ -782,6 +782,43 @@ input::placeholder {
     filter: brightness(0.94);
 }
 
+/* A quick, friendly "nope" response for the symbol the local player picked. */
+.symbol.is-wrong {
+    z-index: 3;
+    pointer-events: none;
+}
+
+.symbol.is-wrong .symbol-image {
+    animation: wrong-symbol-feedback 420ms ease-out both;
+}
+
+@keyframes wrong-symbol-feedback {
+    0% {
+        transform: scale(1);
+        filter: none;
+    }
+
+    25% {
+        transform: translateX(-5%) rotate(-5deg) scale(1.18);
+        filter: sepia(1) saturate(7) hue-rotate(320deg) brightness(1.04);
+    }
+
+    48% {
+        transform: translateX(5%) rotate(5deg) scale(1.18);
+        filter: sepia(1) saturate(7) hue-rotate(320deg) brightness(1.04);
+    }
+
+    70% {
+        transform: translateX(-3%) rotate(-3deg) scale(1.08);
+        filter: sepia(1) saturate(7) hue-rotate(320deg) brightness(1.02);
+    }
+
+    100% {
+        transform: scale(1);
+        filter: none;
+    }
+}
+
 /* Briefly reveal the match after a player scores before dealing new cards. */
 .result-reveal .symbol {
     cursor: default;
@@ -847,6 +884,21 @@ input::placeholder {
     cursor: pointer;
     outline: none;
     text-align-last: right;
+}
+
+.lobby-setting-value {
+    width: 140px;
+    box-sizing: border-box;
+    padding: 7px 10px;
+    border: 2px solid #222;
+    border-radius: 8px;
+    background: #d0d0d0ec;
+    color: #000000 !important;
+    font-family: 'Happy Monkey', cursive;
+    font-size: 14px !important;
+    font-weight: normal !important;
+    line-height: 1.2;
+    text-align: right;
 }
 
 .lobby-waiting {
@@ -1396,15 +1448,22 @@ input::placeholder {
 }
 
 @media (max-width: 780px) and (orientation: portrait) {
+    .game-main {
+        padding: 25px;
+    }
+
     .game-main .game-cards-area {
         flex-direction: column;
         justify-content: center;
         align-items: center;
-        gap: clamp(8px, 1.5dvh, 14px);
+        gap: 8px;
     }
 
     .game-main .card {
-        width: clamp(135px, min(74vw, 23dvh), 250px);
+        /* Each card uses almost half of the available game stage height. */
+        width: auto;
+        height: min(calc((100% - 8px) / 2), 88vw);
+        max-width: 92%;
     }
 }
 

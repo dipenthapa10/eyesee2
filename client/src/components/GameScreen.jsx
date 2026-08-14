@@ -30,6 +30,7 @@ export const GameScreen = ({ rounds, playerName, isHost, hostId, initialPlayers,
     const [timerDuration, setTimerDuration] = useState(initialTimerDuration)
     const [roundLocked, setRoundLocked] = useState(false)
     const [revealedMatch, setRevealedMatch] = useState(null)
+    const [wrongSymbol, setWrongSymbol] = useState(null)
     const [displayedRoundIndex, setDisplayedRoundIndex] = useState(0)
     const [cardMotion, setCardMotion] = useState('idle')
     const [gameCountdown, setGameCountdown] = useState(3)
@@ -43,6 +44,7 @@ export const GameScreen = ({ rounds, playerName, isHost, hostId, initialPlayers,
     const pendingRoundRef = useRef(null)
     const cardMotionTimerRef = useRef(null)
     const roundSafetyTimerRef = useRef(null)
+    const wrongSymbolTimerRef = useRef(null)
 
     useEffect(() => {
         let cancelled = false
@@ -107,6 +109,10 @@ export const GameScreen = ({ rounds, playerName, isHost, hostId, initialPlayers,
             clearTimeout(roundSafetyTimerRef.current)
             roundSafetyTimerRef.current = null
         }
+        const clearWrongSymbolTimer = () => {
+            clearTimeout(wrongSymbolTimerRef.current)
+            wrongSymbolTimerRef.current = null
+        }
 
         const showNewRound = (nextRoundIndex) => {
             if (pendingRoundRef.current === nextRoundIndex) return
@@ -117,9 +123,11 @@ export const GameScreen = ({ rounds, playerName, isHost, hostId, initialPlayers,
 
             clearCardMotionTimer()
             clearRoundSafetyTimer()
+            clearWrongSymbolTimer()
             pendingRoundRef.current = nextRoundIndex
             setRoundLocked(true)
             setRevealedMatch(null)
+            setWrongSymbol(null)
             setCardMotion('leaving')
 
             cardMotionTimerRef.current = setTimeout(() => {
@@ -163,6 +171,7 @@ export const GameScreen = ({ rounds, playerName, isHost, hostId, initialPlayers,
         socket.on('gameRestarted', (data) => {
             clearCardMotionTimer()
             clearRoundSafetyTimer()
+            clearWrongSymbolTimer()
             pendingRoundRef.current = null
             displayedRoundRef.current = 0
             setDisplayedRoundIndex(0)
@@ -170,6 +179,7 @@ export const GameScreen = ({ rounds, playerName, isHost, hostId, initialPlayers,
             setScore(0)
             setGameOver(false)
             setRevealedMatch(null)
+            setWrongSymbol(null)
             setTimer(data.timer)
             setTimerDuration(data.timerDuration)
             setWinner("")
@@ -203,6 +213,7 @@ export const GameScreen = ({ rounds, playerName, isHost, hostId, initialPlayers,
             clearInterval(countdownInterval)
             clearCardMotionTimer()
             clearRoundSafetyTimer()
+            clearWrongSymbolTimer()
 
         }
 
@@ -258,6 +269,12 @@ export const GameScreen = ({ rounds, playerName, isHost, hostId, initialPlayers,
             setRoundLocked(true)
             socket.emit('cardMatch', { playerName, symbol, roundIndex: displayedRoundIndex })
         } else {
+            clearTimeout(wrongSymbolTimerRef.current)
+            setWrongSymbol(symbol)
+            wrongSymbolTimerRef.current = setTimeout(() => {
+                setWrongSymbol(null)
+                wrongSymbolTimerRef.current = null
+            }, 420)
             socket.emit('wrongAnswer', { symbol, roundIndex: displayedRoundIndex })
         }
     }
@@ -503,7 +520,7 @@ export const GameScreen = ({ rounds, playerName, isHost, hostId, initialPlayers,
                         <div className={`card ${cardMotion === 'leaving' ? 'card-leave' : 'card-enter'}`} key={`center-${displayedRoundIndex}`}>
                             {centerCard.map((symbol, index) => (
                                 <span
-                                    className={`symbol ${symbol === revealedMatch ? 'is-match' : ''}`}
+                                    className={`symbol ${symbol === revealedMatch ? 'is-match' : ''} ${symbol === wrongSymbol ? 'is-wrong' : ''}`}
                                     key={symbol}
                                     style={getSymbolStyle(index, centerCard.join(''))}
                                     onClick={() => handleClick(symbol)}
@@ -521,7 +538,7 @@ export const GameScreen = ({ rounds, playerName, isHost, hostId, initialPlayers,
                         <div className={`card your-card ${cardMotion === 'leaving' ? 'card-leave' : 'card-enter'}`} key={`yours-${displayedRoundIndex}`}>
                             {yourCard.map((symbol, index) => (
                                 <span
-                                    className={`symbol ${symbol === revealedMatch ? 'is-match' : ''}`}
+                                    className={`symbol ${symbol === revealedMatch ? 'is-match' : ''} ${symbol === wrongSymbol ? 'is-wrong' : ''}`}
                                     key={symbol}
                                     style={getSymbolStyle(index, yourCard.join(''))}
                                     onClick={() => handleClick(symbol)}

@@ -177,7 +177,7 @@ export const Lobby = ({ playerName, roomCode, isHost, hostId, players, lobbySett
                                 ))}
                             </select>
                         ) : (
-                            <span>{selectedMaxPlayers}</span>
+                            <span className="lobby-setting-value">{selectedMaxPlayers}</span>
                         )}
                     </div>
                     <div className="lobby-setting-row">
@@ -194,7 +194,7 @@ export const Lobby = ({ playerName, roomCode, isHost, hostId, players, lobbySett
                                 ))}
                             </select>
                         ) : (
-                            <span>{selectedRounds} rounds</span>
+                            <span className="lobby-setting-value">{selectedRounds} rounds</span>
                         )}
 
                     </div>
@@ -212,7 +212,7 @@ export const Lobby = ({ playerName, roomCode, isHost, hostId, players, lobbySett
                                 <option value={15}>15 sec</option>
                             </select>
                         ) : (
-                            <span>
+                            <span className="lobby-setting-value">
                                 {selectedTimer === 0
                                     ? "No Time Limit"
                                     : `${selectedTimer} Seconds`}
@@ -237,7 +237,7 @@ export const Lobby = ({ playerName, roomCode, isHost, hostId, players, lobbySett
                                 <option value={10}>10 sec</option>
                             </select>
                         ) : (
-                            <span>{selectedCooldown} seconds</span>
+                            <span className="lobby-setting-value">{selectedCooldown} seconds</span>
                         )}
                     </div>
                 </div>
