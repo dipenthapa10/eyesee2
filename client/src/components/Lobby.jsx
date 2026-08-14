@@ -130,7 +130,7 @@ export const Lobby = ({ playerName, roomCode, isHost, hostId, players, lobbySett
                 <span className="timer-display" aria-label={`Timer: ${selectedTimer === 0 ? 'No Limit' : selectedTimer}`}>
                     <span className="timer-clock">
                         <img className="timer-icon" src={clockIcon} alt="" />
-                        <span className="timer-clock-value">{selectedTimer === 0 ? '∞' : selectedTimer}</span>
+                        <span className={`timer-clock-value${selectedTimer === 0 ? ' no-limit' : ''}`}>{selectedTimer === 0 ? '×' : selectedTimer}</span>
                     </span>
                 </span>
             </header>

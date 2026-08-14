@@ -485,7 +485,7 @@ export const GameScreen = ({ rounds, playerName, isHost, hostId, initialPlayers,
                 <span className="timer-display" aria-label={`Timer: ${timerDuration === 0 ? 'No Limit' : timer}`}>
                     <span className="timer-clock">
                         <img className="timer-icon" src={clockIcon} alt="" />
-                        <span className="timer-clock-value">{timerDuration === 0 ? '∞' : timer}</span>
+                        <span className={`timer-clock-value${timerDuration === 0 ? ' no-limit' : ''}`}>{timerDuration === 0 ? '×' : timer}</span>
                     </span>
                 </span>
             </header>
