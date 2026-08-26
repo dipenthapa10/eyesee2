@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import socket from '../socket'
 import gameLogo from '../assets/logo.png'
+import userAvatar from '../assets/user.svg'
 
 export const HomeScreen = ({ setPlayerName, playerName, setRoomCode, joinError, clearJoinError }) => {
     const sharedRoomCode = new URLSearchParams(window.location.search).get('room')?.trim().toUpperCase() || ''
@@ -47,6 +48,10 @@ export const HomeScreen = ({ setPlayerName, playerName, setRoomCode, joinError, 
                         placeholder="Enter Your Name "
                         onChange={(e) => setPlayerName(e.target.value)}
                     />
+                </div>
+
+                <div className="home-character-preview">
+                    <img src={userAvatar} alt="Your character" />
                 </div>
 
 
