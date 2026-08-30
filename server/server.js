@@ -163,7 +163,8 @@ io.on('connection', (socket) => {
             players: [{
                 id: socket.id,
                 name: data.playerName || 'Host',
-                score: 0
+                score: 0,
+                creatureId: data.creatureId || null
             }],
             gameStarted: false,
             phase: 'lobby',
@@ -218,7 +219,8 @@ io.on('connection', (socket) => {
             const player = {
                 id: socket.id,
                 name: data.playerName,
-                score: 0
+                score: 0,
+                creatureId: data.creatureId || null
             }
             room.players.push(player)
 

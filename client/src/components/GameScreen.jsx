@@ -5,6 +5,7 @@ import socket from "../socket";
 import { ChatBox } from './ChatBox'
 import { Results } from './Results'
 import clockIcon from '../assets/clock.svg'
+import { creatureById } from '../creatures'
 
 const characterFiles = import.meta.glob(
     '../assets/characters/Slice *.svg',
@@ -445,8 +446,10 @@ export const GameScreen = ({ rounds, playerName, isHost, hostId, initialPlayers,
                     <div key={p.id} data-player-id={p.id} className="leaderboard-row">
                         <span className="player-rank">#{i + 1}</span>
                         <div className={`lobby-player-box ${p.connected === false ? 'player-inactive' : ''} ${p.cooldownUntil > now ? 'player-cooldown' : ''} ${p.correctUntil > now ? 'player-correct' : ''}`}>
-                            <div className={`lobby-player-avatar ${i === 1 ? 'p2' : ''}`}>
-                                {p.name[0].toUpperCase()}
+                            <div className={`lobby-player-avatar ${i === 1 ? 'p2' : ''} ${creatureById[p.creatureId] ? 'has-creature' : ''}`}>
+                                {creatureById[p.creatureId]
+                                    ? <img className="player-creature-avatar" src={creatureById[p.creatureId]} alt="" />
+                                    : p.name[0].toUpperCase()}
                                 {p.id === hostId && (
                                     <span className="lobby-host-badge" title="Host">
                                         <FontAwesomeIcon icon={faCrown} aria-label="Host" />

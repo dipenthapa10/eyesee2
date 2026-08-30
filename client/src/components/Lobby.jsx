@@ -4,6 +4,7 @@ import { faCopy, faCrown, faLink } from '@fortawesome/free-solid-svg-icons'
 import socket from '../socket'
 import { ChatBox } from './ChatBox'
 import clockIcon from '../assets/clock.svg'
+import { creatureById } from '../creatures'
 
 export const Lobby = ({ playerName, roomCode, isHost, hostId, players, lobbySettings, activities, chatMessages }) => {
     const {
@@ -268,8 +269,10 @@ export const Lobby = ({ playerName, roomCode, isHost, hostId, players, lobbySett
                         >
                             <span className="player-rank">#{index + 1}</span>
                                 <div className={`lobby-player-box ${player.connected === false || player.inLobby === false ? 'player-inactive' : ''}`}>
-                                    <div className={`lobby-player-avatar ${index === 1 ? 'p2' : ''}`}>
-                                        {player.name[0].toUpperCase()}
+                                    <div className={`lobby-player-avatar ${index === 1 ? 'p2' : ''} ${creatureById[player.creatureId] ? 'has-creature' : ''}`}>
+                                        {creatureById[player.creatureId]
+                                            ? <img className="player-creature-avatar" src={creatureById[player.creatureId]} alt="" />
+                                            : player.name[0].toUpperCase()}
                                         {player.id === hostId && (
                                             <span className="lobby-host-badge" title="Host">
                                                 <FontAwesomeIcon icon={faCrown} aria-label="Host" />

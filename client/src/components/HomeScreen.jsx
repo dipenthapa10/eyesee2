@@ -1,11 +1,23 @@
 import { useState } from 'react'
 import socket from '../socket'
 import gameLogo from '../assets/logo.png'
-import userAvatar from '../assets/user.svg'
+import { creatures } from '../creatures'
 
 export const HomeScreen = ({ setPlayerName, playerName, setRoomCode, joinError, clearJoinError }) => {
     const sharedRoomCode = new URLSearchParams(window.location.search).get('room')?.trim().toUpperCase() || ''
     const [roomCodeLocal, setRoomCodeLocal] = useState(() => sharedRoomCode)
+    const [selectedCreatureId, setSelectedCreatureId] = useState(() =>
+        creatures.find(creature => creature.id === 'cre4')?.id || creatures[0]?.id || ''
+    )
+    const selectedCreature = creatures.find(creature => creature.id === selectedCreatureId) || creatures[0]
+    const selectedCreatureIndex = creatures.findIndex(creature => creature.id === selectedCreature?.id)
+
+    const changeCreature = (direction) => {
+        if (creatures.length === 0) return
+
+        const nextIndex = (selectedCreatureIndex + direction + creatures.length) % creatures.length
+        setSelectedCreatureId(creatures[nextIndex].id)
+    }
 
     const handleCreateRoom = () => {
         if (!playerName || playerName.trim() === "") {
@@ -13,7 +25,7 @@ export const HomeScreen = ({ setPlayerName, playerName, setRoomCode, joinError, 
             return
         }
         clearJoinError()
-        socket.emit('createRoom', { playerName })
+        socket.emit('createRoom', { playerName, creatureId: selectedCreature?.id })
 
     }
 
@@ -29,7 +41,7 @@ export const HomeScreen = ({ setPlayerName, playerName, setRoomCode, joinError, 
         const roomCode = roomCodeLocal.trim().toUpperCase()
         setRoomCode(roomCode)
         clearJoinError()
-        socket.emit('joinRoom', { playerName, roomCode })
+        socket.emit('joinRoom', { playerName, roomCode, creatureId: selectedCreature?.id })
 
     }
 
@@ -51,7 +63,23 @@ export const HomeScreen = ({ setPlayerName, playerName, setRoomCode, joinError, 
                 </div>
 
                 <div className="home-character-preview">
-                    <img src={userAvatar} alt="Your character" />
+                    <button
+                        type="button"
+                        className="creature-arrow"
+                        onClick={() => changeCreature(-1)}
+                        aria-label="Previous character"
+                    >
+                        ‹
+                    </button>
+                    {selectedCreature && <img src={selectedCreature.imageUrl} alt="Your selected character" />}
+                    <button
+                        type="button"
+                        className="creature-arrow"
+                        onClick={() => changeCreature(1)}
+                        aria-label="Next character"
+                    >
+                        ›
+                    </button>
                 </div>
 
 
